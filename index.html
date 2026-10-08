@@ -1,0 +1,1811 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>D-marche</title>
+<meta name="description" content="Prototype : le dossier social préparé à la maison et déposé en un seul passage, pour les personnes âgées, handicapées et malades chroniques.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one working surface. Top bar with three views; the counter view is a 4-step flow with a live file summary on the side. */
+:root{
+  --bg:#F2F4F3; --surface:#FFFFFF; --sunk:#E8ECEA; --line:#D3DAD7; --ink:#14201D; --muted:#56635F;
+  --accent:#12507A; --accent-soft:#DCE8F1; --on-accent:#FFFFFF;
+  --ok:#23704A; --ok-soft:#DCEFE3; --warn:#9A5B00; --warn-soft:#F6EAD2; --bad:#A3271F; --bad-soft:#F6DEDB;
+  --bar:#3B78A8;
+  --f-display:"Readex Pro","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Arabic","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101614; --surface:#18201E; --sunk:#202A27; --line:#33403C; --ink:#E5ECE9; --muted:#9DABA6;
+    --accent:#7FB6DE; --accent-soft:#1D3344; --on-accent:#0C1A24;
+    --ok:#7ACB9C; --ok-soft:#173326; --warn:#E5B567; --warn-soft:#3A2C12; --bad:#F09088; --bad-soft:#3E1D1A;
+    --bar:#6FA6D2; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101614; --surface:#18201E; --sunk:#202A27; --line:#33403C; --ink:#E5ECE9; --muted:#9DABA6;
+  --accent:#7FB6DE; --accent-soft:#1D3344; --on-accent:#0C1A24;
+  --ok:#7ACB9C; --ok-soft:#173326; --warn:#E5B567; --warn-soft:#3A2C12; --bad:#F09088; --bad-soft:#3E1D1A;
+  --bar:#6FA6D2; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--f-body);padding-inline:16px;padding-block:0 32px}
+.wrap{max-width:1180px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ar{font-family:"IBM Plex Sans Arabic",var(--f-body);direction:rtl;unicode-bidi:isolate}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* top bar */
+header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;padding-block:18px 14px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand h1{font-size:26px;font-weight:700;letter-spacing:-.01em}
+.brand h1 .ar{font-size:18px;font-weight:600;color:var(--accent);margin-inline-start:8px}
+.brand h1 .dm{color:var(--accent)}
+.brand p{margin:0;color:var(--muted);font-size:14px}
+.ctx{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;letter-spacing:.04em;padding:2px 8px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px}
+nav.tabs button{border:1px solid transparent;background:none;padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:500;color:var(--muted)}
+nav.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+nav.tabs button:hover{border-color:var(--line)}
+
+/* generic */
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:8px 13px;cursor:pointer;font-weight:500;font-size:14px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface)}
+.chip.on{background:var(--accent-soft);border-color:transparent;color:var(--accent);font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.wait{background:var(--sunk);color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+
+/* counter layout */
+.counter{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.steps button{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);padding:6px 12px 6px 6px;border-radius:999px;cursor:pointer;font-size:14px;color:var(--muted)}
+.steps button b{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--sunk);font-size:12.5px;color:var(--ink)}
+.steps button[aria-current="step"]{border-color:var(--accent);color:var(--ink);font-weight:600}
+.steps button[aria-current="step"] b{background:var(--accent);color:var(--on-accent)}
+.steps button.done b{background:var(--ok);color:var(--on-accent)}
+.stage{padding:22px}
+.stage h2{font-size:21px;font-weight:600;margin-bottom:4px}
+.stage .lead{color:var(--muted);margin:0 0 18px}
+.say{display:grid;gap:10px}
+.say textarea{width:100%;min-height:86px;resize:vertical;border:1px solid var(--line);border-radius:var(--r);background:var(--bg);padding:10px 12px;unicode-bidi:plaintext}
+.say-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.examples{display:flex;gap:6px;flex-wrap:wrap}
+.examples button{border:1px dashed var(--line);background:none;border-radius:var(--r);padding:5px 10px;font-size:13px;cursor:pointer;text-align:start;unicode-bidi:plaintext;max-width:100%}
+.understood{display:flex;gap:6px;flex-wrap:wrap;min-height:28px}
+.procs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
+.proc{display:grid;gap:6px;align-content:start;text-align:start;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:14px;cursor:pointer}
+.proc:hover{border-color:var(--accent)}
+.proc[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.proc svg{width:34px;height:34px;color:var(--accent)}
+.proc .t{font-weight:600}
+.proc .ar{font-size:15px;color:var(--muted)}
+.qgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.q{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px;align-content:start}
+.q .lab{font-weight:600;font-size:14px}
+.q .lab .ar{display:block;font-weight:500;color:var(--muted);font-size:13.5px}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper button{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-size:18px;line-height:1}
+.stepper output{min-width:28px;text-align:center;font-size:18px;font-weight:600}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13.5px}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.sitchips{display:flex;flex-wrap:wrap;gap:8px}
+.sitchips button{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:7px 11px;cursor:pointer;font-size:13.5px;text-align:start}
+.sitchips button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.sitchips svg{width:18px;height:18px;flex:none}
+.full{grid-column:1/-1}
+.nav-row{display:flex;justify-content:space-between;gap:10px;margin-top:20px;flex-wrap:wrap}
+
+/* documents */
+.docs{display:grid;gap:10px}
+.doc{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:start;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface)}
+.doc.ok{border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.doc.bad{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.doc .ico{width:44px;height:44px;border-radius:10px;background:var(--sunk);display:grid;place-items:center;color:var(--ink)}
+.doc .ico svg{width:26px;height:26px}
+.doc .nm{font-weight:600;min-width:0}
+.doc .nm .ar{display:block;font-weight:500;font-size:14px;color:var(--muted)}
+.doc .why{font-size:12.5px;color:var(--muted);margin-top:4px;font-weight:400}
+.doc .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.doc .res{grid-column:2/-1;font-size:13px;display:grid;gap:4px}
+.doc .res .snip{font-family:var(--f-mono);font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;max-height:72px;overflow:auto;white-space:pre-wrap;unicode-bidi:plaintext}
+.qty{font-family:var(--f-mono);font-size:12px;color:var(--accent);font-weight:600;margin-inline-start:6px}
+.ocrstat{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.bar{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;min-width:120px;flex:1}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+canvas.spec{display:none}
+
+/* summary */
+aside.sum{position:sticky;top:12px;padding:18px;display:grid;gap:14px}
+.sum h3{font-size:15px;font-weight:600}
+.meter{display:grid;gap:6px}
+.meter .big{font-family:var(--f-display);font-size:30px;font-weight:600}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:13.5px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;min-width:0}
+.refs{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.refs a{color:var(--accent)}
+
+/* slip */
+.slip{border:2px solid var(--ink);border-radius:10px;padding:20px;background:var(--surface);display:grid;gap:14px}
+.slip-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:10px}
+.slip-head .ar{font-size:20px;font-weight:600}
+.verdict{font-family:var(--f-display);font-size:20px;font-weight:600;display:flex;align-items:center;gap:10px}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.picto{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.pic{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;justify-items:center;gap:6px;text-align:center;position:relative}
+.pic svg{width:46px;height:46px}
+.pic .mark{position:absolute;top:6px;inset-inline-end:6px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px}
+.pic.have .mark{background:var(--ok);color:var(--on-accent)}
+.pic.need{border:2px solid var(--bad)}
+.pic.need .mark{background:var(--bad);color:var(--on-accent)}
+.pic .ar{font-size:14px;font-weight:600}
+.pic .fr{font-size:12px;color:var(--muted)}
+.slip-foot{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* radar */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.kpi{padding:14px 16px;display:grid;gap:2px}
+.kpi .n{font-family:var(--f-display);font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:13px;color:var(--muted)}
+.kpi.alert .n{color:var(--bad)}
+.radar-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:start;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:hover td{background:var(--bg)}
+.factors{display:flex;gap:4px;flex-wrap:wrap}
+.factors span{font-size:11.5px;background:var(--sunk);border-radius:4px;padding:1px 6px;color:var(--muted)}
+.chart{padding:16px}
+.chart h3{font-size:15px;font-weight:600;margin-bottom:2px}
+.bars{display:grid;gap:6px;margin-top:12px}
+.brow{display:grid;grid-template-columns:62px minmax(0,1fr) 30px;gap:8px;align-items:center;font-size:12.5px}
+.brow .track{height:16px;position:relative}
+.brow .fill{position:absolute;inset-block:0;inset-inline-start:0;background:var(--bar);border-radius:0 4px 4px 0;min-width:2px}
+.brow .v{font-family:var(--f-mono);text-align:end}
+.brow:hover .fill{filter:brightness(1.12)}
+.filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.modal{position:fixed;inset:0;background:rgb(0 0 0 / .45);display:grid;place-items:center;padding:16px;z-index:10}
+.modal .box{max-width:560px;width:100%;padding:20px;display:grid;gap:12px;max-height:90vh;overflow:auto}
+
+/* method */
+.method{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.method .panel{padding:18px}
+.method h3{font-size:16px;font-weight:600;margin-bottom:8px}
+.method ul{margin:0;padding-inline-start:18px}
+.method li{margin-bottom:6px}
+.arch{display:grid;gap:8px;font-size:13.5px}
+.arch div{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.arch b{font-weight:600}
+
+
+/* karti */
+.k-intro{display:flex;justify-content:space-between;gap:12px 24px;align-items:end;flex-wrap:wrap;margin-bottom:16px}
+.k-intro h2{font-size:21px;font-weight:600}
+.k-intro p{margin:4px 0 0;max-width:68ch}
+.k-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.k-h{font-size:16px;font-weight:600;margin-bottom:10px}
+.k-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.k-f{display:grid;gap:4px;font-size:13px;font-weight:600}
+.k-f .ar{display:block;font-weight:400;color:var(--muted)}
+.k-f input[type=text],.k-f input[type=number]{border:1px solid var(--line);border-radius:6px;padding:7px 9px;background:var(--bg);font-weight:400;font-size:14px;width:100%;min-width:0}
+.k-check{grid-column:1/-1;display:flex;gap:8px;align-items:flex-start;font-weight:500}
+.k-card{width:100%;height:auto;border-radius:10px;box-shadow:0 1px 3px rgb(0 0 0 / .15);background:#fff}
+.k-form{width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:#fff}
+.k-verdict{font-family:var(--f-display);font-size:22px;font-weight:600}
+.k-verdict.ok{color:var(--ok)} .k-verdict.bad{color:var(--bad)}
+.webform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.webform label{display:grid;gap:3px;font-size:12.5px;color:var(--muted)}
+.webform input{border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--bg);font-size:13.5px;min-width:0}
+.webform input[data-filled="1"]{background:var(--ok-soft);border-color:transparent;color:var(--ink)}
+.k-dis{opacity:.5;pointer-events:none}
+@media (max-width:900px){ .k-grid{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:600px){ .k-fields,.webform{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:900px){
+  .counter{grid-template-columns:minmax(0,1fr)}
+  aside.sum{position:static}
+  .radar-grid,.method{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:600px){
+  .procs,.qgrid{grid-template-columns:minmax(0,1fr)}
+  .doc{grid-template-columns:40px minmax(0,1fr)}
+  .doc .acts{grid-column:1/-1;justify-content:flex-start}
+  .doc .res{grid-column:1/-1}
+}
+/* journey tabs */
+nav.tabs{align-items:center}
+nav.tabs .tn{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:var(--sunk);color:var(--ink);font-size:11.5px;font-weight:700;margin-inline-end:7px;font-family:var(--f-mono)}
+nav.tabs button[aria-selected="true"] .tn{background:var(--accent);color:var(--on-accent)}
+nav.tabs .tsep{width:1px;height:22px;background:var(--line);margin-inline:6px}
+/* rdv + guichet */
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
+.card{padding:18px;display:grid;gap:12px;align-content:start}
+.card h3{font-size:16px;font-weight:600}
+.card h2{font-size:20px;font-weight:600}
+.ready{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--bg)}
+.ready svg{width:34px;height:34px;color:var(--accent);flex:none}
+.checks{display:grid;gap:8px}
+.checks label{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:start;font-size:14px;cursor:pointer}
+.checks small{display:block;color:var(--muted);font-size:12.5px}
+.needs{display:flex;flex-wrap:wrap;gap:8px}
+.needs button{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:7px 11px;cursor:pointer;font-size:13.5px}
+.needs button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.needs svg{width:18px;height:18px}
+.verdict-box{border-radius:10px;padding:12px 14px;font-size:14px}
+.verdict-box.ok{background:var(--ok-soft);color:var(--ok)} .verdict-box.warn{background:var(--warn-soft);color:var(--warn)} .verdict-box.bad{background:var(--bad-soft);color:var(--bad)}
+.verdict-box b{display:block;font-family:var(--f-display);font-size:16px;margin-bottom:2px}
+.office{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:6px}
+.office .attrs{display:flex;flex-wrap:wrap;gap:6px}
+.office .attrs span{font-size:12px;border-radius:4px;padding:1px 7px;background:var(--sunk);color:var(--muted)}
+.office .attrs span.ok{background:var(--ok-soft);color:var(--ok)} .office .attrs span.bad{background:var(--bad-soft);color:var(--bad)}
+.route{width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.slots{display:grid;gap:10px}
+.day{display:grid;gap:6px}
+.day .lbl{font-size:13px;font-weight:600}
+.day .row{display:flex;flex-wrap:wrap;gap:6px}
+.slot{font-family:var(--f-mono);font-size:13px;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 9px;cursor:pointer}
+.slot.prio{border-color:color-mix(in srgb,var(--ok) 55%,var(--line))}
+.slot[disabled]{opacity:.35;cursor:default;text-decoration:line-through}
+.slot[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.ticket{border:2px dashed var(--ink);border-radius:12px;padding:16px;display:grid;gap:10px;background:var(--surface)}
+.ticket .code{font-family:var(--f-display);font-size:30px;font-weight:700;letter-spacing:.02em}
+.queue{display:grid;gap:8px}
+.qitem{display:grid;grid-template-columns:54px minmax(0,1fr) auto;gap:10px;align-items:center;text-align:start;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px;cursor:pointer;width:100%}
+.qitem[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.qitem .t{font-family:var(--f-mono);font-size:13px;font-weight:600}
+.qitem .ic{display:flex;gap:4px;color:var(--muted)} .qitem .ic svg{width:18px;height:18px}
+.rec{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:start;border:1px solid var(--line);border-radius:10px;padding:10px}
+.rec .ico{width:40px;height:40px;border-radius:9px;background:var(--sunk);display:grid;place-items:center} .rec .ico svg{width:24px;height:24px}
+.rec .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.rec .res{grid-column:2/-1;font-size:13px;display:grid;gap:3px}
+.deaf{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.deaf-screen{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:center;padding:14px;background:var(--ink);color:var(--bg)}
+.deaf-screen .big{font-size:22px;font-weight:600;line-height:1.5}
+.deaf-screen .fr{font-size:13px;opacity:.75}
+.deaf-screen .cap{font-size:11px;opacity:.7;text-align:center;margin-top:4px}
+.avatar{width:150px;height:130px}
+.avatar .hl{transform-origin:62px 70px;animation:signl 1.6s ease-in-out infinite}
+.avatar .hr{transform-origin:88px 70px;animation:signr 1.6s ease-in-out infinite}
+@keyframes signl{0%,100%{transform:rotate(0)}50%{transform:rotate(-24deg)}}
+@keyframes signr{0%,100%{transform:rotate(0)}50%{transform:rotate(22deg)}}
+.phr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:12px}
+.phr button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:7px 9px;text-align:start;cursor:pointer;font-size:13px;display:grid;gap:2px}
+.phr button .ar{font-size:14px}
+.resp{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 12px}
+.resp button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;cursor:pointer;font-size:13px}
+.journey{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.journey div{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:3px;background:var(--surface)}
+.journey b{font-family:var(--f-display);font-size:14px}
+.journey span{font-size:12.5px;color:var(--muted)}
+.stat{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat div{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:2px;background:var(--surface)}
+.stat .n{font-family:var(--f-display);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12.5px;color:var(--muted)}
+@media (max-width:900px){ .two{grid-template-columns:minmax(0,1fr)} .journey{grid-template-columns:repeat(2,minmax(0,1fr))} .stat{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:600px){ .phr{grid-template-columns:minmax(0,1fr)} .deaf-screen{grid-template-columns:minmax(0,1fr)} .avatar{margin:0 auto} nav.tabs .tsep{display:none} }
+@media (prefers-reduced-motion:reduce){*{transition:none!important} .avatar .hl,.avatar .hr{animation:none}}
+@media print{
+  header.top,nav.tabs,.steps,.counter>aside,.nav-row,.slip-foot,#viewRadar,#viewMethod,.noprint{display:none!important}
+  body{background:#fff;color:#000}
+  .stage{padding:0;border:none}
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1><span class="dm">D</span>-marche <span class="ar">دوسيك حاضر من أوّل مرّة</span></h1>
+      <p><b style="color:var(--ink);font-weight:600">La démarche, sans les marches.</b> Pour les personnes âgées, les personnes handicapées et les malades chroniques : le dossier se prépare à la maison et se dépose en une seule visite, à un guichet dédié.</p>
+    </div>
+    <div class="ctx"><span>ULPS Gabès Ouest · gouvernorat de Gabès</span><span class="tag">Prototype · données fictives</span></div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Vues">
+    <button role="tab" id="tabCounter" aria-selected="true" aria-controls="viewCounter"><b class="tn">1–2</b>Savoir et préparer</button>
+    <button role="tab" id="tabKarti" aria-selected="false" aria-controls="viewKarti"><b class="tn">3</b>Profil social QR</button>
+    <button role="tab" id="tabRdv" aria-selected="false" aria-controls="viewRdv"><b class="tn">4</b>Rendez-vous prioritaire</button>
+    <button role="tab" id="tabGuichet" aria-selected="false" aria-controls="viewGuichet"><b class="tn">5</b>Guichet Dossier prêt</button>
+    <span class="tsep" aria-hidden="true"></span>
+    <button role="tab" id="tabRadar" aria-selected="false" aria-controls="viewRadar">Renouvellements</button>
+    <button role="tab" id="tabMethod" aria-selected="false" aria-controls="viewMethod">Impact</button>
+  </nav>
+
+  <!-- ===================== COUNTER ===================== -->
+  <section id="viewCounter" role="tabpanel" aria-labelledby="tabCounter">
+    <div class="counter">
+      <div>
+        <div class="steps" id="steps" aria-label="Étapes"></div>
+        <div class="panel stage" id="stage"></div>
+      </div>
+      <aside class="panel sum" id="summary" aria-label="Dossier en cours"></aside>
+    </div>
+  </section>
+
+  <!-- ===================== RADAR ===================== -->
+  <section id="viewRadar" role="tabpanel" aria-labelledby="tabRadar" hidden>
+    <div class="kpis" id="kpis"></div>
+    <div class="radar-grid">
+      <div class="panel" style="padding:16px">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline">
+          <div><h2 style="font-size:18px;font-weight:600">Cartes d'handicap : qui risque de perdre son droit</h2>
+          <p class="muted" style="margin:2px 0 0;font-size:13.5px">Classement par risque de rupture. Le dossier de renouvellement se prépare avant que la personne ne se déplace.</p></div>
+        </div>
+        <div class="filters" id="filters" style="margin-top:12px"></div>
+        <div class="tbl-wrap"><table id="riskTable"></table></div>
+      </div>
+      <div style="display:grid;gap:16px">
+        <div class="panel chart" id="chartDue"></div>
+        <div class="panel chart" id="chartWhy"></div>
+      </div>
+    </div>
+  </section>
+
+<section id="viewKarti" role="tabpanel" aria-labelledby="tabKarti" hidden>
+  <div class="k-intro">
+    <div>
+      <h2>Karti <span class="ar" style="color:var(--accent)">كارتي</span> : le profil social en QR</h2>
+      <p class="muted">Un QR signé par le ministère réunit le profil social de la personne : CIN, identifiant social AMEN, numéros CNSS ou CNRPS et CNAM, priorité d'accueil. Dans l'application, sur une carte ou un autocollant, il se vérifie hors ligne et l'IA remplit n'importe quel formulaire, même un modèle qu'elle n'a jamais vu.</p>
+    </div>
+    <div class="seg k-tabs" role="tablist" aria-label="Étapes Karti">
+      <button type="button" data-k="0" aria-pressed="true">1 · Émettre la carte</button>
+      <button type="button" data-k="1" aria-pressed="false">2 · Scanner et vérifier</button>
+      <button type="button" data-k="2" aria-pressed="false">3 · Remplir un formulaire</button>
+    </div>
+  </div>
+  <div id="kStage"></div>
+</section>
+
+  <!-- ===================== RENDEZ-VOUS ===================== -->
+  <section id="viewRdv" role="tabpanel" aria-labelledby="tabRdv" hidden></section>
+  <!-- ===================== GUICHET DOSSIER PRET ===================== -->
+  <section id="viewGuichet" role="tabpanel" aria-labelledby="tabGuichet" hidden></section>
+
+  <!-- ===================== METHOD ===================== -->
+  <section id="viewMethod" role="tabpanel" aria-labelledby="tabMethod" hidden>
+    <div class="method" id="method"></div>
+  </section>
+</div>
+<canvas class="spec" id="specCanvas" width="900" height="600"></canvas>
+<div id="modalHost"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   ICONS (simple line pictograms, readable without text)
+   ============================================================ */
+const I = {
+  id:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="38" height="26" rx="3"/><circle cx="16" cy="22" r="4"/><path d="M10 31c1.5-3 4-4.5 6-4.5s4.5 1.5 6 4.5M27 19h11M27 25h11M27 31h7"/></svg>',
+  birth:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5h17l9 9v29H12z"/><path d="M29 5v9h9"/><circle cx="25" cy="25" r="4"/><path d="M18 37c1.5-3.5 4-5 7-5s5.5 1.5 7 5"/></svg>',
+  photo:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="11" y="6" width="26" height="34" rx="2"/><circle cx="24" cy="19" r="6"/><path d="M15 36c2-5 5.5-7.5 9-7.5s7 2.5 9 7.5"/></svg>',
+  med:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5h28v38H10z"/><path d="M24 14v12M18 20h12"/><path d="M16 33h16M16 38h10"/></svg>',
+  bill:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5h24v38l-4-3-4 3-4-3-4 3-4-3-4 3z"/><path d="M26 12l-5 9h7l-5 9"/></svg>',
+  school:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l20-10 20 10-20 10z"/><path d="M12 22v10c4 4 20 4 24 0V22"/><path d="M44 18v12"/></svg>',
+  uni:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 40h36M9 40V20M17 40V20M31 40V20M39 40V20M5 18l19-11 19 11z"/></svg>',
+  house:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22L24 7l18 15"/><path d="M11 19v22h26V19"/><path d="M20 41V29h8v12"/></svg>',
+  key:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="24" r="8"/><path d="M24 24h18M36 24v7M42 24v5"/></svg>',
+  law:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M24 6v34M14 40h20M8 14h32"/><path d="M8 14l-5 12c2 3 8 3 10 0zM40 14l-5 12c2 3 8 3 10 0z"/></svg>',
+  card:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="38" height="26" rx="3"/><circle cx="15" cy="20" r="2.5"/><path d="M15 23v6l4 3M13 26h-2M27 19h10M27 25h10M27 31h6"/></svg>',
+  ear:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20a10 10 0 1 1 18 6c-3 4-6 5-6 10a5 5 0 0 1-9 2"/><path d="M21 20a5 5 0 0 1 9 2"/></svg>',
+  eye:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 24c5-8 12-12 20-12s15 4 20 12c-5 8-12 12-20 12S9 32 4 24z"/><circle cx="24" cy="24" r="6"/></svg>',
+  form:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5h28v38H10z"/><path d="M16 14h16M16 21h16M16 28h10"/><path d="M28 36l3 3 6-7"/></svg>',
+  family:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="13" r="5"/><circle cx="33" cy="13" r="5"/><circle cx="24" cy="27" r="4"/><path d="M6 40c0-8 4-13 9-13M42 40c0-8-4-13-9-13M17 42c0-5 3-8 7-8s7 3 7 8"/></svg>',
+  wheel:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="7" r="3"/><path d="M20 12v13h12l5 11"/><path d="M20 18h10"/><circle cx="20" cy="33" r="10"/></svg>',
+  amen:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M24 42S6 31 6 18a9 9 0 0 1 18-3 9 9 0 0 1 18 3c0 13-18 24-18 24z"/><path d="M17 24h14M24 17v14"/></svg>',
+  renew:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M38 18A15 15 0 0 0 10 16M10 30a15 15 0 0 0 28 2"/><path d="M38 8v10H28M10 40V30h10"/></svg>',
+  ill:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="20" width="32" height="12" rx="6"/><path d="M24 20v12"/></svg>',
+  grave:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 42V18a10 10 0 0 1 20 0v24M8 42h32M24 20v10M19 24h10"/></svg>',
+  split:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="14" r="5"/><circle cx="35" cy="14" r="5"/><path d="M5 40c0-8 3-14 8-14s8 6 8 14M27 40c0-8 3-14 8-14s8 6 8 14M24 6v36" stroke-dasharray="3 4"/></svg>',
+  away:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="12" r="5"/><path d="M10 40c0-9 3-15 8-15s8 6 8 15"/><path d="M32 20h10M38 15l5 5-5 5"/></svg>',
+  bars:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="32" height="32" rx="2"/><path d="M16 8v32M24 8v32M32 8v32"/></svg>',
+  child:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="12" r="6"/><path d="M14 42l4-16h12l4 16M18 30h12"/></svg>',
+  people:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="17" cy="15" r="6"/><circle cx="33" cy="17" r="5"/><path d="M5 40c0-8 5-13 12-13s12 5 12 13M31 27c6 0 11 4 12 13"/></svg>',
+  ring:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="19" cy="28" r="11"/><circle cx="31" cy="28" r="11"/><path d="M21 8l4 6 4-6"/></svg>',
+  lost:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="38" height="26" rx="3" stroke-dasharray="4 4"/><path d="M20 20a4 4 0 1 1 5 4c-1 .5-1 1.5-1 3M24 31v.5"/></svg>',
+  mic:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+  speak:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg>',
+  cam:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>'
+};
+
+/* ============================================================
+   KNOWLEDGE BASE — taken from the ministry's published service sheets
+   (social.gov.tn, sheets updated 10/01/2026). Validated by MAS lawyers in the pilot.
+   ============================================================ */
+const SRC = {
+  amen:{t:"Fiche « Programme AMEN social » (منحة العائلات المعوزة)", u:"https://www.social.gov.tn/ar/%D9%85%D9%86%D8%AD%D8%A9-%D8%A7%D9%84%D8%B9%D8%A7%D8%A6%D9%84%D8%A7%D8%AA-%D8%A7%D9%84%D9%85%D8%B9%D9%88%D8%B2%D8%A9"},
+  care:{t:"Fiche « Cartes de soins gratuits et à tarif réduit »", u:"https://www.social.gov.tn/ar/%D8%A5%D8%B3%D9%86%D8%A7%D8%AF-%D8%A8%D8%B7%D8%A7%D9%82%D8%A7%D8%AA-%D8%A7%D9%84%D8%B9%D9%84%D8%A7%D8%AC-%D8%A7%D9%84%D9%85%D8%AC%D8%A7%D9%86%D9%8A-%D9%88%D8%A7%D9%84%D8%B9%D9%84%D8%A7%D8%AC-%D8%A8%D8%A7%D9%84%D8%AA%D8%B9%D8%B1%D9%8A%D9%81%D8%A9-%D8%A7%D9%84%D9%85%D9%86%D8%AE%D9%81%D8%B6%D8%A9-0"},
+  dis1:{t:"Fiche « Attribution de la carte d'handicap » (إسناد بطاقة الإعاقة)", u:"https://www.social.gov.tn/ar/%D8%A5%D8%B3%D9%86%D8%A7%D8%AF-%D8%A8%D8%B7%D8%A7%D9%82%D8%A9-%D8%A7%D9%84%D8%A5%D8%B9%D8%A7%D9%82%D8%A9"},
+  dis2:{t:"Fiche « Renouvellement de la carte d'handicap » (تجديد بطاقة الإعاقة)", u:"https://www.social.gov.tn/ar/%D8%AA%D8%AC%D8%AF%D9%8A%D8%AF-%D8%A8%D8%B7%D8%A7%D9%82%D8%A9-%D8%A7%D9%84%D8%A5%D8%B9%D8%A7%D9%82%D8%A9-0"}
+};
+const PROCS = {
+  amen:{ico:'amen', t:"Programme AMEN social", ar:"منحة العائلات المعوزة وبطاقة العلاج",
+    sub:"Aide mensuelle et carte de soins", law:"Loi organique n° 10 du 30/01/2019 ; décret gouvernemental n° 317 du 19/05/2020", src:['amen','care'],
+    delay:"Étude du dossier (enquête de bureau et de terrain), décision de la commission régionale"},
+  dis1:{ico:'wheel', t:"Carte d'handicap, première demande", ar:"إسناد بطاقة الإعاقة",
+    sub:"Délai légal : 45 jours", law:"Décret n° 3086 du 29/11/2005, modifié par le décret n° 1859 du 03/07/2006", src:['dis1'],
+    delay:"Réponse sous 45 jours, après avis de la commission régionale des personnes handicapées"},
+  dis2:{ico:'renew', t:"Carte d'handicap, renouvellement", ar:"تجديد بطاقة الإعاقة",
+    sub:"Carte valable 5 ou 10 ans", law:"Décret n° 3086 du 29/11/2005, modifié par le décret n° 1859 du 03/07/2006", src:['dis2'],
+    delay:"Réponse sous 45 jours, après avis de la commission régionale des personnes handicapées"}
+};
+/* document types the AI can recognise. kw: keywords (normalised Arabic + French). */
+const DT = {
+  form:{ico:'form', ar:"مطلب ترشح مملوء", fr:"Formulaire de candidature rempli"},
+  letter:{ico:'form', ar:"مطلب كتابي باسم وزير الشؤون الاجتماعية", fr:"Demande écrite adressée au ministre"},
+  birth:{ico:'birth', ar:"مضمون ولادة", fr:"Extrait de naissance", kw:["مضمون ولاده","مضمون الولاده","extrait de naissance","naissance","ولاده"]},
+  cin:{ico:'id', ar:"نسخة من بطاقة التعريف الوطنية", fr:"Copie de la carte d'identité", kw:["بطاقه التعريف","التعريف الوطنيه","carte d'identite","carte nationale","identite"]},
+  cinMarried:{ico:'ring', ar:"بطاقة التعريف للأبناء المتزوجين", fr:"CIN des enfants mariés", kwFrom:'cin'},
+  photo:{ico:'photo', ar:"صورة شمسية", fr:"Photo d'identité"},
+  bill:{ico:'bill', ar:"آخر فاتورة ماء وكهرباء", fr:"Dernières factures d'eau et d'électricité", kw:["فاتوره","استهلاك","الكهرباء","الماء","facture","electricite","consommation","kwh"]},
+  presence:{ico:'school', ar:"شهادة حضور للتلاميذ", fr:"Certificat de présence (élèves)", kw:["شهاده حضور","حضور","certificat de presence","presence","السنه الدراسيه","annee scolaire"]},
+  inscr:{ico:'uni', ar:"شهادة تسجيل للطلبة", fr:"Attestation d'inscription (étudiants)", kw:["شهاده تسجيل","تسجيل","inscription","جامعه","universite"]},
+  careCard:{ico:'card', ar:"نسخة من بطاقة العلاج", fr:"Copie de la carte de soins", kw:["بطاقه العلاج","العلاج المجاني","carnet de soins","soins"]},
+  medChronic:{ico:'med', ar:"شهادة طبية (مرض مزمن أو ثقيل)", fr:"Certificat médical (maladie chronique)", kw:["شهاده طبيه","certificat medical","طبيب","medecin","docteur"]},
+  disCard:{ico:'card', ar:"بطاقة الإعاقة سارية المفعول", fr:"Carte d'handicap en cours de validité", kw:["بطاقه الاعاقه","بطاقه اعاقه","carte d'handicap","handicap"]},
+  residence:{ico:'house', ar:"شهادة إقامة لكل فرد", fr:"Certificat de résidence pour chaque personne", kw:["شهاده اقامه","اقامه","certificat de residence","residence"]},
+  tutelle:{ico:'law', ar:"حكم تقديم أو شهادة كفالة قانونية", fr:"Jugement de tutelle ou attestation de kafala", kw:["حكم تقديم","كفاله","kafala","tutelle","حكم","محكمه"]},
+  divorce:{ico:'split', ar:"حكم الطلاق أو شهادة نشر قضية", fr:"Jugement de divorce ou attestation d'affaire en cours", kw:["حكم","طلاق","divorce","محكمه","tribunal"]},
+  nafaqa:{ico:'law', ar:"حكم نفقة أو شهادة نشر قضية إهمال عيال", fr:"Jugement de pension ou attestation d'affaire d'abandon", kw:["نفقه","اهمال عيال","pension","abandon","حكم","محكمه"]},
+  death:{ico:'grave', ar:"حجة وفاة رئيس الأسرة", fr:"Acte de décès du chef de famille", kw:["وفاه","حجه وفاه","deces","acte de deces"]},
+  absence:{ico:'away', ar:"حكم بالفقدان أو محضر أمني", fr:"Jugement d'absence ou procès-verbal de police", kw:["فقدان","محضر","absence","proces-verbal"]},
+  prison:{ico:'bars', ar:"حكم بالسجن أو بطاقة زيارة", fr:"Jugement d'emprisonnement ou carte de visite", kw:["سجن","زياره","prison","visite"]},
+  lease:{ico:'key', ar:"نسخة من عقد الكراء", fr:"Copie du contrat de location", kw:["عقد كراء","عقد الكراء","عقد تسوغ","كراء","contrat de location","bail","loyer"]},
+  medModel:{ico:'med', ar:"شهادة طبية حسب أنموذج الوزارة", fr:"Certificat médical sur le modèle du ministère", kw:["شهاده طبيه","certificat medical","طبيب","medecin"]},
+  guardianCin:{ico:'id', ar:"بطاقة تعريف الولي", fr:"CIN du parent ou tuteur", kwFrom:'cin'},
+  oldCard:{ico:'card', ar:"بطاقة الإعاقة الحالية", fr:"Carte d'handicap actuelle", kwFrom:'disCard'},
+  lossCert:{ico:'lost', ar:"شهادة ضياع", fr:"Attestation de perte", kw:["شهاده ضياع","ضياع","perte","declaration de perte"]},
+  audio:{ico:'ear', ar:"شهادة طبية في قيس السمع", fr:"Audiogramme (certificat de mesure de l'audition)", kw:["قيس السمع","السمع","audiogramme","audition","audiometrie"]},
+  vision:{ico:'eye', ar:"شهادة طبية في قيس البصر", fr:"Certificat de mesure de la vue", kw:["قيس البصر","البصر","acuite","vision","ophtalm"]}
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const TODAY = new Date(2026, 9, 6); // demo date: 6 Oct 2026
+const SCHOOL_YEAR_START = new Date(2026, 8, 1);
+const S = {
+  step:0, proc:null, text:"", understood:[], applicant:"",
+  amen:{size:4, adults:2, pupils:1, students:0, married:false, spouse:true, careCard:false,
+        sits:{chronic:false, disabled:false, kinship:false, tutelle:false, divorce:false, nafaqa:false, death:false, absence:false, prison:false, rent:false}},
+  dis:{minor:false, type:'motrice', lost:false},
+  docs:{}, // id -> {status:'wait'|'ok'|'bad'|'present'|'absent', note, snippet, detected, date}
+  session:{verified:0, files:0}
+};
+
+/* ============================================================
+   RULES ENGINE — exact list of documents for this household
+   ============================================================ */
+function requiredDocs(){
+  const L = [], add = (id, qty, why, opts={}) => L.push({id, qty, why, ...opts});
+  if (S.proc === 'amen'){
+    const a = S.amen, sit = a.sits, chief = (sit.death || sit.absence || sit.prison) ? 1 : 0;
+    add('form', 1, "Généré et pré-rempli par l'outil à partir des réponses.", {auto:true});
+    add('birth', a.size, `Un extrait par membre du foyer (${a.size} personnes).`);
+    add('cin', Math.max(a.adults,1), `Chaque membre de plus de 18 ans (${Math.max(a.adults,1)}).`);
+    if (a.married) add('cinMarried', 1, "Enfants mariés, qu'ils vivent ou non avec la famille.");
+    if (a.pupils>0) add('presence', a.pupils, `Un certificat par élève (${a.pupils}), année scolaire en cours.`, {current:true});
+    if (a.students>0) add('inscr', a.students, `Une attestation par étudiant (${a.students}).`, {current:true});
+    const ph = (a.spouse && !sit.divorce && !chief) ? 2 : 1;
+    add('photo', ph, ph===2 ? "Chef de famille et conjoint." : "Chef de famille.");
+    add('bill', 1, "Les dernières factures (moins de 3 mois, seuil paramétrable).", {recency:90});
+    if (a.careCard) add('careCard', 1, "La famille a déjà une carte de soins.");
+    if (sit.chronic) add('medChronic', 1, "Membre atteint d'une maladie chronique ou lourde.");
+    if (sit.disabled) add('disCard', 1, "Membre handicapé : carte en cours de validité.", {validity:true});
+    if (sit.kinship) add('residence', 1, "Prise en charge de proches vivant sous le même toit.");
+    if (sit.tutelle) add('tutelle', 1, "Mineurs ou personnes sans soutien pris en charge.");
+    if (sit.divorce) add('divorce', 1, "Situation de divorce.");
+    if (sit.nafaqa) add('nafaqa', 1, "Abandon de famille.");
+    if (sit.death) add('death', 1, "Décès du chef de famille.");
+    if (sit.absence) add('absence', 1, "Absence du chef de famille.");
+    if (sit.prison) add('prison', 1, "Chef de famille incarcéré.");
+    if (sit.rent) add('lease', 1, "La famille est locataire de son logement.");
+  } else if (S.proc === 'dis1'){
+    const d = S.dis;
+    add('letter', 1, "Générée par l'outil, à signer ou à marquer d'une empreinte.", {auto:true});
+    add('birth', 1, "Extrait de naissance de la personne concernée.");
+    add(d.minor ? 'guardianCin' : 'cin', 1, d.minor ? "Personne mineure : CIN du parent ou tuteur." : "Personne majeure.");
+    add('photo', 2, "Deux photos d'identité.");
+    add('medModel', 1, "Remplie par le médecin traitant sur le modèle du ministère (disponible à l'ULPS).", {model:true});
+  } else if (S.proc === 'dis2'){
+    const d = S.dis;
+    if (d.minor) add('birth', 1, "Personne mineure : extrait de naissance récent.", {recency:90});
+    else add('cin', 1, "Personne majeure.");
+    add('photo', 1, "Une photo d'identité.");
+    add(d.lost ? 'lossCert' : 'oldCard', 1, d.lost ? "La carte actuelle est perdue." : "La carte actuelle, à rendre.");
+    add('medModel', 1, "Remplie par le médecin traitant sur le modèle du ministère (disponible à l'ULPS).", {model:true});
+    if (d.type === 'auditive') add('audio', 1, "Handicap auditif : mesure de l'audition à chaque renouvellement.");
+    if (d.type === 'visuelle') add('vision', 1, "Handicap visuel : mesure de la vue à chaque renouvellement.");
+  }
+  return L;
+}
+
+/* ============================================================
+   UNDERSTANDING WHAT THE PERSON SAYS (darija / arabic / french)
+   Prototype: lexicon-based. Pilot: Tunisian Whisper + fine-tuned classifier.
+   ============================================================ */
+function norm(t){
+  return (t||"").toLowerCase()
+    .replace(/[ً-ْـ]/g,"")
+    .replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي")
+    .replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d))
+    .normalize("NFD").replace(/[̀-ͯ]/g,"");
+}
+const NUMW = {"واحد":1,"وحده":1,"زوز":2,"اثنين":2,"ثلاثه":3,"تلاثه":3,"اربعه":4,"خمسه":5,"سته":6,"سبعه":7,"ثمانيه":8,"تسعه":9,
+  "wa7ed":1,"zouz":2,"zoz":2,"thletha":3,"tletha":3,"arb3a":4,"arba3a":4,"khamsa":5,"setta":6,"sab3a":7,"thmanya":8,
+  "un":1,"une":1,"deux":2,"trois":3,"quatre":4,"cinq":5,"six":6,"sept":7,"huit":8};
+const NUMRE = "\\d+|" + Object.keys(NUMW).sort((a,b) => b.length - a.length).join("|");
+function numBefore(t, re){
+  const m = t.match(new RegExp("(?:^|[\\s،,.])(" + NUMRE + ")\\s+(?:\\S+\\s+){0,2}?(?:" + re + ")"));
+  if (!m) return null;
+  const w = m[1]; if (/^\d+$/.test(w)) return +w;
+  return NUMW[w] ?? null;
+}
+function understand(raw){
+  const t = norm(raw), U = [], has = re => new RegExp(re).test(t);
+  const isDis = has("اعاق|معاق|handicap|بطاقه اعاق|كرسي|fauteuil|sourd|اطرش|طرش|كفيف|aveugle|malentend|malvoy");
+  const isRenew = has("تجديد|نجدد|جدد|انتهت|كملت|فاتت|expir|renouvel|njad+ed|jad+ed|perim|tjaded");
+  const isAmen = has("امان|amen|منحه|معوز|فقر|زوالي|بطاقه العلاج|كارني|carnet|pas de revenu|sans revenu|aucun revenu|sans ressources|ما عندناش دخل|ما عندناش مدخول|pauvre|aide sociale|7aja|محتاج");
+  let proc = null;
+  if (isDis && !isAmen) proc = isRenew ? 'dis2' : 'dis1';
+  else if (isAmen || (!isDis && has("مريض|malade|توفي|veuve|طلاق|divorc|نكري|loyer|يقراو|ecole"))) proc = 'amen';
+  else if (isDis) proc = isRenew ? 'dis2' : 'dis1';
+  if (proc){ S.proc = proc; U.push(PROCS[proc].t); }
+  if (proc === 'amen'){
+    const a = S.amen, sit = a.sits;
+    const size = numBefore(t, "افراد|انفار|في العايله|nfar|personnes|membres|في الدار");
+    if (size){ a.size = Math.min(Math.max(size,1),12); U.push(`Foyer de ${a.size} personnes`); }
+    const pupils = numBefore(t, "صغار|اطفال|ولاد|wlad|sghar|enfants|tfol");
+    const study = has("يقراو|يقرا|في المدرسه|في الليسي|ecole|scolaris|y9raw|yakraw|ya9raw|college|lycee");
+    if (study){ a.pupils = pupils || 1; U.push(`${a.pupils} élève(s)`); }
+    if (has("جامعه|universite|fac\\b|etudiant|طالب|طالبه|jem3a|jam3a")){ a.students = Math.max(1, a.students); U.push("Étudiant(e)"); }
+    const flag = (k, re, label) => { if (has(re)){ sit[k] = true; U.push(label); } };
+    flag('death', "توفي|متوفي|مات|ماتت|decede|deces|veuve|ارمله|armla|mat\\b", "Décès du chef de famille");
+    flag('divorce', "طلاق|مطلق|طلقت|طلقني|divorc|tla9|mtal9", "Divorce");
+    flag('nafaqa', "نفقه|اهمال|abandon|خلانا|ما يصرفش|hjarna|هجرنا", "Abandon de famille");
+    flag('absence', "غايب|مفقود|disparu|absent", "Chef de famille absent");
+    flag('prison', "سجن|حبس|محبوس|prison|incarc|mahbous", "Chef de famille incarcéré");
+    flag('rent', "نكري|نكريو|كراء|كري|loyer|locat|louer|nekri|kra\\b|locataire", "Locataire");
+    flag('chronic', "مريض|مريضه|مرض|maladie|malade|سكري|diab|cancer|سرطان|chroniq|mridh|mridha", "Maladie chronique");
+    if (isDis){ sit.disabled = true; U.push("Membre handicapé"); }
+    flag('kinship', "عايش معانا|ساكن معانا|ساكنه معانا|vit avec nous|habite avec nous|a notre charge|عايشه معانا", "Proche à charge");
+    flag('tutelle', "كافل|كفاله|tutelle|kafala", "Tutelle ou kafala");
+    if (sit.death || sit.absence || sit.prison || sit.divorce) a.spouse = false;
+    if (has("وحدي|وحدها|وحده|seule?\\b|vit seule|wa7dha|wa7di")){ a.size = Math.max(1, size || 1); if (!size) a.size = 1; a.adults = 1; a.spouse = false; U.push("Vit seule"); }
+    a.size = Math.max(a.size, (a.spouse ? 2 : 1) + a.pupils + a.students);
+    a.adults = Math.min(Math.max(a.adults, 1 + (a.spouse ? 1 : 0) + a.students), a.size);
+  }
+  if (proc === 'dis1' || proc === 'dis2'){
+    const d = S.dis;
+    const age = t.match(/(\d{1,2})\s*(?:ans|an\b|سنه|سنين|عام|snin|sna)/);
+    if (age && +age[1] < 18){ d.minor = true; U.push(`Mineur (${age[1]} ans)`); }
+    else if (has("ولدي|بنتي|weldi|benti|mon fils|ma fille|enfant|صغير|طفل")){ d.minor = true; U.push("Mineur"); }
+    if (has("سمع|طرش|اطرش|sourd|malentend|smaa|audition")){ d.type = 'auditive'; U.push("Handicap auditif"); }
+    else if (has("بصر|عمى|كفيف|aveugle|malvoy|vue\\b|ma ychoufch|ما يشوفش")){ d.type = 'visuelle'; U.push("Handicap visuel"); }
+    if (has("ضاعت|ضيعت|ضياع|perdu|perte|tlefet|تلفت")){ d.lost = true; U.push("Carte perdue"); }
+  }
+  S.understood = U;
+  return U;
+}
+
+/* ============================================================
+   DOCUMENT AI — OCR (Tesseract, arabic + french) + type + dates + rules
+   ============================================================ */
+let ocr = {worker:null, loading:null, progress:0, status:'idle', msg:''};
+function loadScript(src){ return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('script')); document.head.append(s); }); }
+async function localLang(code){
+  // language data shipped with the page (works offline and inside the artifact viewer)
+  for (const name of [`tessdata/${code}.traineddata.gz`, `tessdata/${code}.traineddata.gz.wasm`]){
+    try{ const r = await fetch(new URL(name, location.href).href); if (r.ok) return {code, data:new Uint8Array(await r.arrayBuffer())}; }catch(e){}
+  }
+  return null;
+}
+async function getWorker(){
+  if (ocr.worker) return ocr.worker;
+  if (ocr.loading) return ocr.loading;
+  ocr.status = 'loading'; renderOcrStatus();
+  ocr.loading = (async () => {
+    if (!window.Tesseract) await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
+    const [ara, fra] = await Promise.all([localLang('ara'), localLang('fra')]);
+    const langs = ara && fra ? [ara, fra] : ['ara','fra'];
+    const opts = {
+      workerPath: ara && fra ? new URL('vendor/worker.min.js', location.href).href : 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
+      corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
+      cacheMethod:'none',
+      logger: m => { if (m.progress != null){ ocr.progress = m.progress; ocr.msg = m.status; renderOcrStatus(); } }
+    };
+    const w = await Tesseract.createWorker(langs, 1, opts);
+    ocr.worker = w; ocr.status = 'ready'; renderOcrStatus();
+    return w;
+  })().catch(e => { ocr.status = 'error'; ocr.loading = null; renderOcrStatus(); throw e; });
+  return ocr.loading;
+}
+function parseDates(text){
+  const t = (text||"").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+  const out = [];
+  for (const m of t.matchAll(/\b(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*(\d{4})\b/g)){
+    const d = new Date(+m[3], +m[2]-1, +m[1]); if (!isNaN(d) && +m[2] <= 12) out.push(d);
+  }
+  for (const m of t.matchAll(/\b(\d{4})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\b/g)){
+    const d = new Date(+m[1], +m[2]-1, +m[3]); if (!isNaN(d) && +m[2] <= 12) out.push(d);
+  }
+  return out;
+}
+const fmt = d => d ? d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+const daysBetween = (a,b) => Math.round((b - a) / 86400000);
+function scoreType(t, id){
+  const def = DT[DT[id]?.kwFrom || id]; if (!def || !def.kw) return 0;
+  return def.kw.reduce((s,k) => s + (t.includes(norm(k)) ? (k.length > 8 ? 2 : 1) : 0), 0);
+}
+function bestType(t){
+  let best = null, bs = 0;
+  for (const id of Object.keys(DT)){ if (!DT[id].kw) continue; const s = scoreType(t, id); if (s > bs){ bs = s; best = id; } }
+  return bs >= 1 ? best : null;
+}
+function judge(req, text){
+  const t = norm(text), expected = req.id, kwId = DT[expected].kwFrom || expected;
+  const r = {status:'ok', notes:[], detected:null, date:null};
+  if (expected === 'photo'){
+    r.notes.push("Photo d'identité : vérification visuelle par l'agent.");
+    return r;
+  }
+  const s = scoreType(t, expected), other = bestType(t);
+  r.detected = s > 0 ? expected : other;
+  if (!t.trim() || t.replace(/\s/g,'').length < 12){ r.status = 'bad'; r.notes.push("Texte illisible : reprendre la photo à plat, avec plus de lumière."); return r; }
+  if (s === 0){
+    r.status = 'bad';
+    r.notes.push(other ? `Ce document ressemble à : ${DT[other].fr}. Pièce attendue : ${DT[expected].fr}.` : `Pièce attendue non reconnue : ${DT[expected].fr}.`);
+    return r;
+  }
+  const dates = parseDates(text).filter(d => d <= new Date(TODAY.getTime() + 86400000*3650));
+  const past = dates.filter(d => d <= TODAY).sort((a,b) => b - a);
+  const future = dates.filter(d => d > TODAY).sort((a,b) => a - b);
+  if (req.recency){
+    if (!past.length){ r.status = 'bad'; r.notes.push("Date d'émission introuvable : l'agent vérifie à la main."); }
+    else { r.date = past[0]; const age = daysBetween(past[0], TODAY);
+      if (age > req.recency){ r.status = 'bad'; r.notes.push(`Trop ancien : émis le ${fmt(past[0])}, il y a ${age} jours (maximum ${req.recency}).`); }
+      else r.notes.push(`Émis le ${fmt(past[0])}, il y a ${age} jours.`); }
+  }
+  if (req.current){
+    const yr = t.match(/(20\d\d)\s*[-\/]\s*(20\d\d)/);
+    const y0 = yr ? Math.min(+yr[1], +yr[2]) : null; // OCR of right-to-left lines can swap the two years
+    if (yr && y0 < SCHOOL_YEAR_START.getFullYear()){ r.status = 'bad'; r.notes.push(`Année scolaire ${y0}-${y0+1} : il faut le certificat de l'année en cours (2026-2027).`); }
+    else if (yr) r.notes.push(`Année scolaire ${y0}-${y0+1}.`);
+  }
+  if (req.validity || expected === 'oldCard'){
+    if (future.length){ r.notes.push(`Valable jusqu'au ${fmt(future[future.length-1])}.`); }
+    else if (req.validity && past.length){ r.status = 'bad'; r.notes.push(`Carte expirée (dernière date lue : ${fmt(past[0])}). Prévoir le renouvellement.`); }
+  }
+  if (req.model){
+    const isModel = /وزاره الشؤون الاجتماعيه|انموذج|نموذج الوزاره|modele du ministere|ministere des affaires sociales/.test(t);
+    if (!isModel){ r.status = 'bad'; r.notes.push("Certificat sur papier libre : il faut le modèle du ministère. Motif de rejet fréquent."); }
+    else r.notes.push("Modèle du ministère reconnu.");
+  }
+  if (r.status === 'ok' && !r.notes.length) r.notes.push(`${DT[expected].fr} reconnu.`);
+  return r;
+}
+async function runOcr(reqId, source){
+  const req = requiredDocs().find(x => x.id === reqId); if (!req) return;
+  if (reqId === 'photo'){ S.docs[reqId] = {status:'ok', notes:["Photo reçue : l'agent vérifie qu'elle est récente et ressemblante."]}; renderStage(); renderSummary(); return; }
+  S.docs[reqId] = {status:'busy', notes:["Lecture du document…"]}; renderStage(); renderSummary();
+  try{
+    const w = await getWorker();
+    const { data } = await w.recognize(source);
+    const res = judge(req, data.text);
+    S.docs[reqId] = {...res, snippet:(data.text||'').trim().slice(0,400), text:(data.text||''), good:source && source.dataset ? source.dataset.good : undefined};
+    S.session.verified++;
+  }catch(e){
+    S.docs[reqId] = {status:'bad', notes:["La lecture automatique n'est pas disponible dans cet aperçu. L'agent peut cocher « Présent » après contrôle visuel."]};
+  }
+  renderStage(); renderSummary();
+}
+
+/* ---------- fictitious specimen documents, drawn in the browser ---------- */
+function specLines(id, good){
+  const L = [];
+  switch (DT[id].kwFrom || id){
+    case 'birth': L.push("الجمهورية التونسية","بلدية قابس","مضمون ولادة","الاسم : سلمى","اللقب : الحامدي","تاريخ الولادة : 14/03/2016","تاريخ التسليم : " + (good ? "21/09/2026" : "11/01/2026")); break;
+    case 'cin': L.push("الجمهورية التونسية","بطاقة التعريف الوطنية","اللقب : الحامدي","الاسم : فاطمة","تاريخ الولادة : 02/05/1979","مكان الولادة : قابس"); break;
+    case 'bill': L.push("فاتورة استهلاك الكهرباء والماء","الحريف : الحامدي فاطمة","الاستهلاك : 182 kWh","تاريخ الفاتورة : " + (good ? "18/09/2026" : "04/05/2026"),"المبلغ : 41.300 د"); break;
+    case 'presence': L.push("وزارة التربية","المدرسة الابتدائية نهج الجمهورية قابس","شهادة حضور","يشهد المدير أن التلميذ : يوسف الحامدي","يزاول دراسته بالسنة الرابعة","السنة الدراسية " + (good ? "2026-2027" : "2025-2026")); break;
+    case 'inscr': L.push("جامعة قابس","شهادة تسجيل","الطالبة : مريم الحامدي","السنة الجامعية " + (good ? "2026-2027" : "2025-2026")); break;
+    case 'medModel': if (good) L.push("وزارة الشؤون الاجتماعية","شهادة طبية لطلب بطاقة إعاقة","حسب الأنموذج المعتمد","يشهد الطبيب الممضي أسفله","تاريخ : 29/09/2026"); else L.push("شهادة طبية","يشهد الطبيب أن المريض يحتاج الراحة","تاريخ : 29/09/2026"); break;
+    case 'medChronic': L.push("شهادة طبية","يشهد الطبيب أن السيدة فاطمة الحامدي","مصابة بمرض مزمن : السكري","تاريخ : 15/09/2026"); break;
+    case 'disCard': L.push("وزارة الشؤون الاجتماعية","بطاقة إعاقة","الاسم : علي الحامدي","صالحة إلى : " + (good ? "15/11/2029" : "15/11/2025")); break;
+    case 'lease': L.push("عقد كراء محل معد للسكنى","المكري : محمد الجلاصي","المتسوغ : فاطمة الحامدي","معين الكراء : 220 د شهريا","تاريخ : 01/02/2026"); break;
+    case 'death': L.push("الجمهورية التونسية","بلدية قابس","حجة وفاة","المرحوم : الهادي الحامدي","تاريخ الوفاة : 12/06/2025"); break;
+    case 'audio': L.push("شهادة طبية في قيس السمع","المريض : يوسف الحامدي","فقدان سمع عميق","تاريخ : 20/09/2026"); break;
+    case 'vision': L.push("شهادة طبية في قيس البصر","المريض : علي الحامدي","تاريخ : 20/09/2026"); break;
+    case 'lossCert': L.push("شهادة ضياع","ضياع بطاقة إعاقة","تاريخ : 30/09/2026"); break;
+    case 'careCard': L.push("بطاقة العلاج المجاني","رئيس العائلة : فاطمة الحامدي","صالحة إلى : 31/12/2027"); break;
+    case 'residence': L.push("شهادة إقامة","يقيم بقابس الغربية","تاريخ : 01/10/2026"); break;
+    default: L.push(DT[id].ar, "تاريخ : 01/10/2026");
+  }
+  return L;
+}
+/* altered original: one date (or one amount) differs from the version checked at home */
+function alterLines(L){
+  const out = L.slice(); let done = false;
+  for (let i = out.length - 1; i >= 0 && !done; i--){
+    const m = out[i].match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m){ out[i] = out[i].replace(m[0], `${m[1]}/${m[2]}/${+m[3] - 1}`); done = true; }
+  }
+  for (let i = out.length - 1; i >= 0 && !done; i--){
+    const m = out[i].match(/\d{3,}/); if (m){ out[i] = out[i].replace(m[0], String(+m[0] + 100)); done = true; }
+  }
+  return out;
+}
+function specimen(id, good, alt){
+  const c = document.getElementById('specCanvas'), g = c.getContext('2d');
+  g.fillStyle = '#fbfaf7'; g.fillRect(0,0,c.width,c.height);
+  g.strokeStyle = '#333'; g.lineWidth = 3; g.strokeRect(14,14,c.width-28,c.height-28);
+  const fictive = "نموذج للتجربة - وثيقة وهمية";
+  let L = specLines(id, good); if (alt) L = alterLines(L);
+  g.fillStyle = '#111'; g.textAlign = 'right'; g.direction = 'rtl';
+  let y = 80;
+  L.forEach((line, i) => { g.font = (i < 3 ? '600 ' : '') + (i === 2 || (i===1 && L.length<5) ? '38px' : '30px') + ' "IBM Plex Sans Arabic", Arial'; g.fillText(line, c.width - 50, y); y += i === 2 ? 70 : 56; });
+  g.save(); g.translate(c.width/2, c.height - 70); g.rotate(-0.04); g.fillStyle = 'rgba(170,30,30,.55)'; g.textAlign = 'center';
+  g.font = '600 26px "IBM Plex Sans Arabic", Arial'; g.fillText(fictive + "  ·  SPECIMEN FICTIF", 0, 0); g.restore();
+  return c;
+}
+
+/* ============================================================
+   RENDER — counter flow
+   ============================================================ */
+const STEPS = ["Démarche","Situation","Pièces","Fiche à emporter"];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function renderSteps(){
+  $('steps').innerHTML = STEPS.map((s,i) => `<button type="button" data-step="${i}" ${i===S.step?'aria-current="step"':''} class="${i<S.step?'done':''}" ${i>0 && !S.proc ? 'disabled' : ''}><b>${i<S.step?'✓':i+1}</b>${s}</button>`).join("");
+  $('steps').querySelectorAll('button').forEach(b => b.onclick = () => { S.step = +b.dataset.step; renderAll(); });
+}
+const EXAMPLES = [
+  "راجلي توفي، عندنا خمسة في العايلة، زوز صغار يقراو وبنتي في الجامعة، ونكريو دار",
+  "Bghit njadded la carte handicap mta3 weldi, sourd, 9 ans",
+  "Ma mère a 74 ans, elle vit seule, elle est malade et n'a aucun revenu",
+  "طلقت وراجلي ما يصرفش علينا، عندي ثلاثه صغار يقراو"
+];
+function stageDemarche(){
+  const mic = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  return `
+  <p class="eyebrow">Étape 1</p>
+  <h2>Quelle démarche, pour quelle situation ?</h2>
+  <p class="lead">À la maison, la personne, un proche ou une association décrit la situation avec ses mots, en darija, en arabe ou en français. L'outil propose la démarche, l'institution compétente et la liste exacte des pièces. Au guichet, l'agent peut faire la même chose pour la personne (mode relais).</p>
+  <div class="say">
+    <label for="sayText" class="eyebrow">Décrire la situation</label>
+    <textarea id="sayText" dir="auto" placeholder="Exemple : عندي خمسة في العايلة وراجلي مريض…">${esc(S.text)}</textarea>
+    <div class="say-row">
+      <button class="btn primary" id="btnUnderstand" type="button">Analyser</button>
+      <button class="btn" id="btnMic" type="button" ${mic?'':'disabled title="Micro non disponible dans ce navigateur"'}>${I.mic} Dicter</button>
+      <select id="micLang" class="btn sm" aria-label="Langue de la dictée"><option value="ar-TN">Darija / arabe</option><option value="fr-FR">Français</option></select>
+      <span class="muted" id="micMsg" style="font-size:13px"></span>
+    </div>
+    <div class="examples" aria-label="Exemples">${EXAMPLES.map((e,i) => `<button type="button" data-ex="${i}" dir="auto">${esc(e)}</button>`).join("")}</div>
+    <div><span class="eyebrow">Ce que l'outil a compris</span><div class="understood" id="understood">${S.understood.length ? S.understood.map(u => `<span class="chip on">${esc(u)}</span>`).join("") : '<span class="muted" style="font-size:13.5px">Rien encore. Analysez un texte ou choisissez directement une démarche.</span>'}</div></div>
+  </div>
+  <div class="procs">${Object.entries(PROCS).map(([k,p]) => `
+    <button class="proc" type="button" data-proc="${k}" aria-pressed="${S.proc===k}">${I[p.ico]}<span class="t">${p.t}</span><span class="ar">${p.ar}</span><span class="muted" style="font-size:13px">${p.sub}</span></button>`).join("")}
+  </div>
+  <div class="nav-row"><span></span><button class="btn primary" id="next" type="button" ${S.proc?'':'disabled'}>Continuer vers la situation</button></div>`;
+}
+function stepper(id, val, min, max){ return `<div class="stepper"><button type="button" data-dec="${id}" aria-label="Moins">−</button><output id="o_${id}">${val}</output><button type="button" data-inc="${id}" aria-label="Plus">+</button></div>`; }
+function seg(id, opts, cur){ return `<div class="seg">${opts.map(([v,l]) => `<button type="button" data-seg="${id}" data-v="${v}" aria-pressed="${String(cur)===String(v)}">${l}</button>`).join("")}</div>`; }
+const SITS = [
+  ['chronic','ill',"Maladie chronique","مرض مزمن"],['disabled','wheel',"Membre handicapé","إعاقة"],['kinship','people',"Proche à charge","كفالة الأقارب"],
+  ['tutelle','child',"Tutelle ou kafala de mineurs","كفالة قصر"],['divorce','split',"Divorce","طلاق"],['nafaqa','law',"Abandon de famille","إهمال عيال"],
+  ['death','grave',"Décès du chef de famille","وفاة رئيس الأسرة"],['absence','away',"Chef de famille absent","غياب رئيس الأسرة"],['prison','bars',"Chef de famille incarcéré","سجن رئيس الأسرة"],
+  ['rent','key',"Locataire","تسوغ مسكن"]
+];
+function stageSituation(){
+  let body = '';
+  if (S.proc === 'amen'){
+    const a = S.amen;
+    body = `<div class="qgrid">
+      <div class="q full"><span class="lab">Nom du demandeur (facultatif) <span class="ar">اسم طالب الخدمة</span></span><input id="applicant" class="btn" style="width:100%;font-weight:400" value="${esc(S.applicant)}" placeholder="Ex. Fatma Hamdi" dir="auto"></div>
+      <div class="q"><span class="lab">Personnes dans le foyer <span class="ar">عدد أفراد الأسرة</span></span>${stepper('size',a.size,1,12)}</div>
+      <div class="q"><span class="lab">Dont majeurs (18 ans et plus) <span class="ar">الراشدون</span></span>${stepper('adults',a.adults,1,12)}</div>
+      <div class="q"><span class="lab">Élèves <span class="ar">التلاميذ</span></span>${stepper('pupils',a.pupils,0,10)}</div>
+      <div class="q"><span class="lab">Étudiants <span class="ar">الطلبة</span></span>${stepper('students',a.students,0,6)}</div>
+      <div class="q"><span class="lab">Conjoint présent ? <span class="ar">القرين</span></span>${seg('spouse',[[true,'Oui'],[false,'Non']],a.spouse)}</div>
+      <div class="q"><span class="lab">Enfants mariés ? <span class="ar">أبناء متزوجون</span></span>${seg('married',[[true,'Oui'],[false,'Non']],a.married)}</div>
+      <div class="q"><span class="lab">Carte de soins actuelle ? <span class="ar">بطاقة علاج</span></span>${seg('careCard',[[true,'Oui'],[false,'Non']],a.careCard)}</div>
+      <div class="q full"><span class="lab">Situations particulières <span class="ar">الحالات الخاصة</span></span>
+        <div class="sitchips">${SITS.map(([k,ic,fr,ar]) => `<button type="button" data-sit="${k}" aria-pressed="${a.sits[k]}">${I[ic]}<span>${fr}<span class="ar" style="display:block;font-size:12.5px;opacity:.8">${ar}</span></span></button>`).join("")}</div></div>
+    </div>`;
+  } else {
+    const d = S.dis;
+    body = `<div class="qgrid">
+      <div class="q full"><span class="lab">Nom de la personne concernée (facultatif) <span class="ar">الاسم</span></span><input id="applicant" class="btn" style="width:100%;font-weight:400" value="${esc(S.applicant)}" placeholder="Ex. Youssef Hamdi" dir="auto"></div>
+      <div class="q"><span class="lab">Âge <span class="ar">السن</span></span>${seg('minor',[[false,'Majeur'],[true,'Mineur']],d.minor)}</div>
+      <div class="q"><span class="lab">Type de handicap <span class="ar">نوع الإعاقة</span></span>${seg('type',[['motrice','Moteur'],['auditive','Auditif'],['visuelle','Visuel'],['mentale','Mental']],d.type)}</div>
+      ${S.proc==='dis2'?`<div class="q"><span class="lab">Carte actuelle perdue ? <span class="ar">ضياع البطاقة</span></span>${seg('lost',[[false,'Non'],[true,'Oui']],d.lost)}</div>`:''}
+    </div>`;
+  }
+  return `<p class="eyebrow">Étape 2 · ${esc(PROCS[S.proc].t)}</p>
+  <h2>La situation du foyer</h2>
+  <p class="lead">Chaque réponse change la liste légale des pièces. Les pictogrammes permettent de répondre sans lire.</p>
+  ${body}
+  <div class="nav-row"><button class="btn ghost" id="prev" type="button">Retour</button><button class="btn primary" id="next" type="button">Voir la liste exacte des pièces</button></div>`;
+}
+function docStatusPill(st){
+  if (!st) return '<span class="pill wait">À vérifier</span>';
+  return ({ok:'<span class="pill ok">Vérifié ✓</span>', present:'<span class="pill ok">Présent ✓</span>', bad:'<span class="pill bad">À refaire</span>', absent:'<span class="pill bad">Manquant</span>', busy:'<span class="pill wait">Lecture…</span>'})[st.status] || '<span class="pill wait">À vérifier</span>';
+}
+function stagePieces(){
+  const L = requiredDocs();
+  return `<p class="eyebrow">Étape 3 · ${esc(PROCS[S.proc].t)}</p>
+  <h2>${L.length} pièces, ni plus ni moins</h2>
+  <p class="lead">Liste tirée des textes officiels pour cette situation. Chez soi, on photographie chaque pièce : l'IA la reconnaît, lit les dates et signale ce qui ne va pas, avant tout déplacement. Pour la démo, chaque ligne propose aussi un spécimen fictif, conforme ou non.</p>
+  <div class="ocrstat" id="ocrStat"></div>
+  <div class="docs">${L.map(r => {
+    const d = DT[r.id], st = S.docs[r.id];
+    const cls = st ? (['ok','present'].includes(st.status) ? 'ok' : (['bad','absent'].includes(st.status) ? 'bad' : '')) : '';
+    const auto = r.auto;
+    return `<div class="doc ${auto?'ok':cls}">
+      <div class="ico" aria-hidden="true">${I[d.ico]}</div>
+      <div class="nm">${esc(d.fr)}${r.qty>1?`<span class="qty">× ${r.qty}</span>`:''}<span class="ar">${esc(d.ar)}</span><div class="why">${esc(r.why)}</div></div>
+      <div class="acts">${auto ? '<span class="pill ok">Généré ✓</span>' : `
+        ${docStatusPill(st)}
+        <label class="btn sm" title="Photographier ou choisir un fichier">${I.cam} Photo<input type="file" accept="image/*" capture="environment" data-file="${r.id}" hidden></label>
+        ${d.kw || d.kwFrom ? `<span class="seg"><button type="button" class="btn sm" data-spec="${r.id}" data-good="1" title="Spécimen fictif conforme">Spécimen ✓</button><button type="button" class="btn sm" data-spec="${r.id}" data-good="0" title="Spécimen fictif avec un problème">✗</button></span>` : ''}
+        <button type="button" class="btn sm ghost" data-present="${r.id}" title="L'agent a vérifié l'original">Présent</button>
+        <button type="button" class="btn sm ghost" data-absent="${r.id}">Manquant</button>`}
+      </div>
+      ${st && st.notes ? `<div class="res">${st.notes.map(n => `<span>${['bad','absent'].includes(st.status)?'⚠ ':''}${esc(n)}</span>`).join("")}${st.snippet ? `<details><summary class="muted" style="cursor:pointer;font-size:12.5px">Texte lu par l'IA</summary><div class="snip" dir="auto">${esc(st.snippet)}</div></details>` : ''}</div>` : ''}
+    </div>`;}).join("")}</div>
+  <div class="nav-row"><button class="btn ghost" id="prev" type="button">Retour</button><button class="btn primary" id="next" type="button">Préparer la fiche à emporter</button></div>`;
+}
+function tally(){
+  const L = requiredDocs(), have = [], need = [];
+  L.forEach(r => { const st = S.docs[r.id]; if (r.auto || (st && ['ok','present'].includes(st.status))) have.push(r); else need.push(r); });
+  return {L, have, need};
+}
+function nextBusinessDay(n){ const d = new Date(TODAY); let k = 0; while (k < n){ d.setDate(d.getDate()+1); if (d.getDay() !== 0 && d.getDay() !== 6) k++; } return d; }
+function slipText(){
+  const {need} = tally(), name = S.applicant ? S.applicant + "، " : "";
+  if (!need.length) return `${name}دوسيك كامل. موعدك في الوحدة المحلية للنهوض الاجتماعي يوم ${nextBusinessDay(3).toLocaleDateString('ar-TN')}. ما تجيب حتى شي آخر.`;
+  return `${name}باش يكمل دوسيك، لازم تجيب : ${need.map(r => DT[r.id].ar + (r.qty>1 ? " (" + r.qty + ")" : "")).join("، ")}. كي تكمل، نعطيوك موعد.`;
+}
+function stageFiche(){
+  const {L, have, need} = tally(), ok = !need.length, p = PROCS[S.proc];
+  const canPrint = (() => { try { return window.self === window.top; } catch(e){ return false; } })();
+  return `<p class="eyebrow">Étape 4</p>
+  <h2>La fiche à emporter</h2>
+  <p class="lead">Pour celle qui ne lit pas : des pictogrammes, une croix rouge sur ce qui manque, et le même message à écouter. Dossier complet : il est prêt à être déposé en un seul passage.</p>
+  <div class="slip" id="slip">
+    <div class="slip-head"><div><div class="ar">${p.ar}</div><div class="muted" style="font-size:13px">${esc(p.t)} · ULPS Gabès Ouest</div></div>
+      <div style="text-align:end"><div style="font-weight:600">${esc(S.applicant || '')}</div><div class="muted mono" style="font-size:12.5px">${fmt(TODAY)}</div></div></div>
+    <div class="verdict ${ok?'ok':'bad'}">${ok ? `✓ Dossier complet <span class="ar" style="font-size:18px">الدوسي كامل</span>` : `${need.length} pièce${need.length>1?'s':''} à apporter <span class="ar" style="font-size:18px">وثائق ناقصة</span>`}</div>
+    <div class="picto">${[...need, ...have].map(r => { const d = DT[r.id], h = have.includes(r);
+      return `<div class="pic ${h?'have':'need'}"><span class="mark" aria-hidden="true">${h?'✓':'✗'}</span><span style="color:${h?'var(--ok)':'var(--bad)'}">${I[d.ico]}</span><span class="ar">${esc(d.ar)}${r.qty>1?` × ${r.qty}`:''}</span><span class="fr">${esc(d.fr)}</span></div>`; }).join("")}</div>
+    <div class="muted" style="font-size:13.5px">${ok ? `Dossier prêt : il reste à réserver un passage au <b>guichet Dossier prêt</b>, prioritaire si la personne y a droit. ${esc(p.delay)}.` : `Dès que les pièces manquantes sont photographiées à la maison (ou par un proche), le passage au guichet peut être réservé.`}</div>
+    <div class="ar" style="font-size:15px;background:var(--bg);border-radius:8px;padding:10px 12px;line-height:1.8">${esc(slipText())}</div>
+  </div>
+  <div class="slip-foot noprint" style="margin-top:12px">
+    <button class="btn primary" id="btnSpeak" type="button">${I.speak} Écouter le message</button>
+    <button class="btn" id="btnCopy" type="button">Copier le message</button>
+    ${canPrint ? '<button class="btn" id="btnPrint" type="button">Imprimer la fiche</button>' : ''}
+    <span class="muted" id="speakMsg" style="font-size:12.5px">Dans le pilote : voix enregistrée en darija par un agent.</span>
+  </div>
+  <div class="nav-row"><button class="btn ghost" id="prev" type="button">Retour aux pièces</button><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="restart" type="button">Nouveau dossier</button>${ok ? '<button class="btn primary" id="toRdv" type="button">Réserver le passage au guichet</button>' : ''}</span></div>`;
+}
+
+function renderStage(){
+  const st = $('stage');
+  st.innerHTML = [stageDemarche, stageSituation, stagePieces, stageFiche][S.step]();
+  bindStage();
+  if (S.step === 2) renderOcrStatus();
+}
+function renderOcrStatus(){ ['ocrStat','kOcrStat'].forEach(id => renderOcrStatusIn($(id))); }
+function renderOcrStatusIn(el){
+  if (!el) return;
+  const pct = Math.round((ocr.progress||0)*100);
+  el.innerHTML = ocr.status === 'ready' ? `<span class="pill ok">IA de lecture prête</span><span>OCR arabe et français, exécuté dans le navigateur : aucune image ne quitte le poste.</span>`
+    : ocr.status === 'loading' ? `<span class="pill wait">Chargement de l'IA de lecture</span><span class="bar"><i style="width:${pct}%"></i></span><span class="mono">${pct}%</span>`
+    : ocr.status === 'error' ? `<span class="pill warn">Lecture automatique indisponible ici</span><span>Le contrôle visuel par l'agent reste possible (bouton « Présent »). Sur GitHub Pages ou en local, l'OCR fonctionne.</span>`
+    : `<span class="pill wait">IA de lecture en veille</span><span>Elle se charge à la première photo (quelques secondes).</span>`;
+}
+function renderSummary(){
+  const el = $('summary');
+  if (!S.proc){ el.innerHTML = `<h3>Dossier en cours</h3><p class="muted" style="margin:0;font-size:13.5px">Choisissez une démarche pour voir la liste des pièces se construire ici, avec les textes de référence.</p>
+    <div class="refs">Session : <span class="mono">${S.session.files}</span> dossier(s) préparé(s), <span class="mono">${S.session.verified}</span> pièce(s) lue(s) par l'IA.</div>`; return; }
+  const {L, have, need} = tally(), p = PROCS[S.proc], pct = L.length ? Math.round(have.length / L.length * 100) : 0;
+  el.innerHTML = `<div><p class="eyebrow">Dossier en cours</p><h3>${esc(p.t)}</h3><div class="ar muted" style="font-size:14px">${p.ar}</div></div>
+    <div class="meter"><span class="big mono">${have.length}/${L.length}</span><span class="bar"><i style="width:${pct}%;background:${need.length?'var(--accent)':'var(--ok)'}"></i></span><span class="muted" style="font-size:13px">${need.length ? `${need.length} pièce(s) encore à vérifier` : 'Toutes les pièces sont là'}</span></div>
+    <dl class="kv">${S.applicant ? `<dt>Demandeur</dt><dd>${esc(S.applicant)}</dd>` : ''}
+      ${S.proc==='amen' ? `<dt>Foyer</dt><dd>${S.amen.size} pers., ${S.amen.adults} majeur(s)</dd><dt>Scolarité</dt><dd>${S.amen.pupils} élève(s), ${S.amen.students} étudiant(s)</dd>` : `<dt>Personne</dt><dd>${S.dis.minor?'Mineure':'Majeure'}, handicap ${S.dis.type}</dd>`}
+      <dt>Institution</dt><dd>Ministère des Affaires sociales, ULPS du lieu de résidence</dd><dt>Dépôt</dt><dd>Un passage au guichet Dossier prêt</dd></dl>
+    <div class="refs"><b>Base légale :</b> ${esc(p.law)}.<br>${p.src.map(k => `<a href="${SRC[k].u}" target="_blank" rel="noopener">${esc(SRC[k].t)}</a>`).join('<br>')}</div>
+    <div class="refs">L'outil prépare et vérifie. La décision appartient à l'agent et à la commission : il ne refuse jamais un dossier.</div>`;
+}
+function renderAll(){ renderSteps(); renderStage(); renderSummary(); }
+
+function bindStage(){
+  const q = sel => $('stage').querySelectorAll(sel);
+  const n = $('next'), pr = $('prev');
+  if (n) n.onclick = () => { if (S.step === 2) S.session.files++; S.step = Math.min(3, S.step+1); renderAll(); window.scrollTo({top:0, behavior:'smooth'}); };
+  if (pr) pr.onclick = () => { S.step = Math.max(0, S.step-1); renderAll(); };
+  if (S.step === 0){
+    const ta = $('sayText');
+    ta.oninput = () => { S.text = ta.value; };
+    $('btnUnderstand').onclick = () => { S.text = ta.value; understand(S.text); S.docs = {}; renderAll(); };
+    q('[data-ex]').forEach(b => b.onclick = () => { S.text = EXAMPLES[+b.dataset.ex]; resetSituation(); understand(S.text); S.docs = {}; renderAll(); });
+    q('[data-proc]').forEach(b => b.onclick = () => { if (S.proc !== b.dataset.proc){ S.proc = b.dataset.proc; S.docs = {}; } renderAll(); });
+    const mic = $('btnMic');
+    if (mic && !mic.disabled) mic.onclick = () => dictate();
+  }
+  if (S.step === 1){
+    const ap = $('applicant'); if (ap) ap.oninput = () => { S.applicant = ap.value; renderSummary(); };
+    const lim = {size:[1,12], adults:[1,12], pupils:[0,10], students:[0,6]};
+    q('[data-inc]').forEach(b => b.onclick = () => { const k = b.dataset.inc; S.amen[k] = Math.min(lim[k][1], S.amen[k]+1); if (k==='adults') S.amen.adults = Math.min(S.amen.adults, S.amen.size); if (k==='size') S.amen.adults = Math.min(S.amen.adults, S.amen.size); renderStage(); renderSummary(); });
+    q('[data-dec]').forEach(b => b.onclick = () => { const k = b.dataset.dec; S.amen[k] = Math.max(lim[k][0], S.amen[k]-1); if (k==='size') S.amen.adults = Math.min(S.amen.adults, S.amen.size); renderStage(); renderSummary(); });
+    q('[data-seg]').forEach(b => b.onclick = () => { const k = b.dataset.seg, raw = b.dataset.v, v = raw === 'true' ? true : raw === 'false' ? false : raw;
+      if (k in S.amen && S.proc==='amen') S.amen[k] = v; else S.dis[k] = v; renderStage(); renderSummary(); });
+    q('[data-sit]').forEach(b => b.onclick = () => { const k = b.dataset.sit; S.amen.sits[k] = !S.amen.sits[k];
+      if (['death','absence','prison','divorce'].includes(k) && S.amen.sits[k]) S.amen.spouse = false; renderStage(); renderSummary(); });
+  }
+  if (S.step === 2){
+    q('[data-file]').forEach(inp => inp.onchange = () => { const f = inp.files && inp.files[0]; if (f) runOcr(inp.dataset.file, f); });
+    q('[data-spec]').forEach(b => b.onclick = () => {
+      const id = b.dataset.spec, good = b.dataset.good === '1', req = requiredDocs().find(x => x.id === id) || {};
+      const hasRule = req.recency || req.current || req.validity || req.model || id === 'oldCard';
+      const c = (good || hasRule) ? specimen(id, good) : specimen(id === 'bill' ? 'presence' : 'bill', true);
+      c.dataset.good = good ? '1' : '0';
+      runOcr(id, c); });
+    q('[data-present]').forEach(b => b.onclick = () => { S.docs[b.dataset.present] = {status:'present', notes:["Original vérifié par l'agent."]}; renderStage(); renderSummary(); });
+    q('[data-absent]').forEach(b => b.onclick = () => { S.docs[b.dataset.absent] = {status:'absent', notes:["Pièce non fournie : elle figurera sur la fiche à emporter."]}; renderStage(); renderSummary(); });
+  }
+  if (S.step === 3){
+    $('btnSpeak').onclick = speakSlip;
+    $('btnCopy').onclick = async () => { const t = slipText(); try { await navigator.clipboard.writeText(t); $('btnCopy').textContent = 'Message copié'; } catch(e){ $('btnCopy').textContent = 'Copie impossible ici'; } };
+    const pb = $('btnPrint'); if (pb) pb.onclick = () => window.print();
+    $('restart').onclick = () => { S.step = 0; S.proc = null; S.text = ""; S.understood = []; S.applicant = ""; S.docs = {}; resetSituation(); renderAll(); };
+    const tr = $('toRdv'); if (tr) tr.onclick = () => { if (typeof markReady === 'function') markReady(); setTab('Rdv'); window.scrollTo({top:0}); };
+  }
+}
+function resetSituation(){
+  S.amen = {size:4, adults:2, pupils:0, students:0, married:false, spouse:true, careCard:false, sits:Object.fromEntries(SITS.map(s => [s[0], false]))};
+  S.dis = {minor:false, type:'motrice', lost:false}; S.proc = null;
+}
+function dictate(){
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition, msg = $('micMsg');
+  try{
+    const r = new R(); r.lang = $('micLang').value; r.interimResults = true; r.maxAlternatives = 1;
+    msg.textContent = "J'écoute…";
+    r.onresult = e => { const t = Array.from(e.results).map(x => x[0].transcript).join(' '); $('sayText').value = t; S.text = t; };
+    r.onerror = e => { msg.textContent = e.error === 'not-allowed' ? "Micro refusé ici : tapez le texte ou choisissez un exemple." : "Dictée interrompue."; };
+    r.onend = () => { if (msg.textContent === "J'écoute…") msg.textContent = ""; if (S.text){ understand(S.text); S.docs = {}; renderAll(); } };
+    r.start();
+  }catch(e){ msg.textContent = "Dictée indisponible ici."; }
+}
+function speakSlip(){
+  const m = $('speakMsg');
+  if (!('speechSynthesis' in window)){ m.textContent = "Synthèse vocale indisponible ici."; return; }
+  const voices = speechSynthesis.getVoices(), ar = voices.find(v => /^ar/i.test(v.lang));
+  const u = new SpeechSynthesisUtterance(ar ? slipText() : frSlip());
+  if (ar){ u.voice = ar; u.lang = ar.lang; } else { const fr = voices.find(v => /^fr/i.test(v.lang)); if (fr){ u.voice = fr; u.lang = fr.lang; } }
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+  m.textContent = ar ? "Lecture en arabe (voix du navigateur). Dans le pilote : voix enregistrée en darija." : "Pas de voix arabe sur cet appareil : lecture en français.";
+}
+function frSlip(){ const {need} = tally(); return need.length ? `Pour compléter votre dossier, apportez : ${need.map(r => DT[r.id].fr).join(', ')}.` : `Votre dossier est complet. Rendez-vous dans trois jours ouvrables.`; }
+
+/* ============================================================
+   RADAR — synthetic register of the ULPS (fictional people)
+   ============================================================ */
+function rng(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const R = rng(20261006), pick = a => a[Math.floor(R()*a.length)];
+const FN_F = ["فاطمة","مبروكة","زينب","سعاد","نجاة","حليمة","سلمى","مريم","خديجة","عائشة","ربح","منية"], FN_M = ["محمد","علي","الهادي","عمر","يوسف","صالح","الطاهر","بلقاسم","منصف","حسين","نور الدين","إبراهيم"];
+const LN = ["الحامدي","الجلاصي","العياري","القاسمي","الزواري","الشابي","الغربي","السعيدي","الهمامي","العبيدي","المرزوقي","الخليفي","الدريدي","الفرجاني","الجبالي","بن سالم"];
+const DELEG = [["Gabès Ouest",3],["Gabès Médina",5],["Gabès Sud",7],["Ghannouch",9],["El Métouia",18],["El Hamma",31],["Mareth",36],["Matmata",44],["Nouvelle Matmata",38],["Menzel El Habib",58]];
+const TYPES = [['motrice','Moteur'],['auditive','Auditif'],['visuelle','Visuel'],['mentale','Mental']];
+const PEOPLE = Array.from({length:180}, (_, i) => {
+  const female = R() < .48, age = Math.floor(6 + R()*82), deleg = pick(DELEG);
+  const expires = new Date(TODAY.getTime() + Math.round((R()*560 - 70)) * 86400000);
+  const t = pick(TYPES), lines = R() < .3 ? 3 : R() < .55 ? 2 : 1;
+  return { id:`H-${String(1040+i).padStart(5,'0')}`, name:`${pick(female?FN_F:FN_M)} ${pick(LN)}`, age, minor: age < 18,
+    deleg:deleg[0], km:Math.max(1, Math.round(deleg[1] + (R()-.5)*8)), type:t[0], typeFr:t[1], lines,
+    alone: age >= 60 && R() < .38, phone: R() < .16 ? 'none' : R() < .62 ? 'basic' : 'smart', expires };
+});
+function risk(p){
+  const d = daysBetween(TODAY, p.expires);
+  const f = []; let z = -2.4;
+  if (d < 0){ z += 3.2; f.push(`expirée depuis ${-d} j`); } else if (d <= 30){ z += 2.4; f.push(`expire dans ${d} j`); } else if (d <= 90){ z += 1.3; f.push(`expire dans ${d} j`); }
+  if (p.alone){ z += .9; f.push('vit seule'); }
+  if (p.phone === 'none'){ z += 1.1; f.push('sans téléphone'); }
+  if (p.km > 30){ z += .8; f.push(`${p.km} km de l'ULPS`); }
+  if (p.age >= 70){ z += .7; f.push(`${p.age} ans`); }
+  if (p.lines === 3){ z += .6; f.push('handicap profond'); }
+  const s = 1/(1+Math.exp(-z));
+  return {s, d, f, lvl: s >= .66 ? 'élevé' : s >= .4 ? 'moyen' : 'faible'};
+}
+let radarFilter = 'due90';
+function action(p, r){
+  if (p.phone === 'none' && (p.km > 30 || p.alone || p.lines === 3)) return ['Visite à domicile','home'];
+  if (p.phone === 'none') return ['Prévenir par un relais (omda)','relay'];
+  return ['Appel avec message en darija','call'];
+}
+function renderRadar(){
+  const rows = PEOPLE.map(p => ({p, r:risk(p)}));
+  const due90 = rows.filter(x => x.r.d >= 0 && x.r.d <= 90), lapsed = rows.filter(x => x.r.d < 0), high = rows.filter(x => x.r.lvl === 'élevé' && x.r.d <= 90);
+  $('kpis').innerHTML = [
+    [due90.length, "cartes à renouveler dans les 90 jours"],
+    [lapsed.length, "droits déjà en rupture (carte expirée)", true],
+    [high.length, "personnes à risque élevé, à traiter en premier"],
+    [Math.round((due90.length + lapsed.length) * 2), "déplacements évités si les dossiers sont préparés à l'avance (2 par dossier, hypothèse à mesurer)"]
+  ].map(([n,l,a]) => `<div class="panel kpi ${a?'alert':''}"><span class="n">${n}</span><span class="l">${l}</span></div>`).join("");
+  const F = [['due90','À traiter : ≤ 90 jours et expirées'],['lapsed','Expirées'],['high','Risque élevé'],['all','Tous']];
+  $('filters').innerHTML = `<span class="eyebrow">Afficher</span>` + F.map(([k,l]) => `<button type="button" class="chip ${radarFilter===k?'on':''}" data-f="${k}">${l}</button>`).join("");
+  $('filters').querySelectorAll('[data-f]').forEach(b => b.onclick = () => { radarFilter = b.dataset.f; renderRadar(); });
+  let list = radarFilter === 'due90' ? due90.concat(lapsed) : radarFilter === 'lapsed' ? lapsed : radarFilter === 'high' ? rows.filter(x => x.r.lvl === 'élevé') : rows;
+  list = list.sort((a,b) => b.r.s - a.r.s).slice(0, 40);
+  $('riskTable').innerHTML = `<thead><tr><th>Personne</th><th>Échéance</th><th>Risque</th><th>Pourquoi</th><th>Action proposée</th></tr></thead><tbody>${list.map(({p,r}) => {
+    const [act, kind] = action(p, r);
+    return `<tr><td><div class="ar" style="font-weight:600;text-align:start">${esc(p.name)}</div><div class="muted mono" style="font-size:12px">${p.id} · ${esc(p.deleg)} · ${p.typeFr}</div></td>
+      <td class="mono">${fmt(p.expires)}</td>
+      <td><span class="pill ${r.lvl==='élevé'?'bad':r.lvl==='moyen'?'warn':'ok'}">${r.lvl} · ${Math.round(r.s*100)}</span></td>
+      <td><div class="factors">${r.f.map(x => `<span>${esc(x)}</span>`).join("")}</div></td>
+      <td><div style="display:grid;gap:4px;justify-items:start"><span style="font-size:13px">${act}</span>
+        <span style="display:flex;gap:4px;flex-wrap:wrap"><button type="button" class="btn sm" data-prep="${p.id}">Préparer le dossier</button>${kind==='call'?`<button type="button" class="btn sm ghost" data-call="${p.id}">Script d'appel</button>`:''}</span></div></td></tr>`; }).join("")}</tbody>`;
+  $('riskTable').querySelectorAll('[data-prep]').forEach(b => b.onclick = () => prepFor(b.dataset.prep));
+  $('riskTable').querySelectorAll('[data-call]').forEach(b => b.onclick = () => callScript(b.dataset.call));
+  // chart 1: due per month (next 12 months)
+  const months = Array.from({length:12}, (_, i) => { const d = new Date(TODAY.getFullYear(), TODAY.getMonth()+i, 1); return {d, n:0}; });
+  rows.forEach(({p}) => { const i = (p.expires.getFullYear()-TODAY.getFullYear())*12 + p.expires.getMonth() - TODAY.getMonth(); if (i >= 0 && i < 12) months[i].n++; });
+  const mx = Math.max(...months.map(m => m.n), 1);
+  $('chartDue').innerHTML = `<h3>Renouvellements à venir, par mois</h3><p class="muted" style="margin:0;font-size:13px">Pour planifier la charge de l'ULPS et des commissions.</p>
+    <div class="bars">${months.map(m => `<div class="brow" title="${m.d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'})} : ${m.n} carte(s)"><span class="muted">${m.d.toLocaleDateString('fr-FR',{month:'short',year:'2-digit'})}</span><span class="track"><span class="fill" style="width:${m.n/mx*100}%"></span></span><span class="v">${m.n}</span></div>`).join("")}</div>`;
+  $('chartWhy').innerHTML = `<h3>Comment le risque est calculé</h3><p class="muted" style="margin:0 0 8px;font-size:13px">Modèle de démonstration, transparent. Dans le pilote, il est recalibré sur l'historique réel des renouvellements manqués.</p>
+    <dl class="kv"><dt>Échéance</dt><dd>expirée +3,2 · ≤ 30 j +2,4 · ≤ 90 j +1,3</dd><dt>Isolement</dt><dd>vit seule +0,9</dd><dt>Téléphone</dt><dd>aucun +1,1</dd><dt>Distance</dt><dd>plus de 30 km +0,8</dd><dt>Âge</dt><dd>70 ans et plus +0,7</dd><dt>Handicap</dt><dd>profond (3 traits) +0,6</dd></dl>
+    <p class="muted" style="font-size:12.5px;margin:10px 0 0">Score = probabilité logistique. Il sert à <b>ordonner</b> le travail, jamais à refuser un droit.</p>`;
+}
+function prepFor(id){
+  const p = PEOPLE.find(x => x.id === id); if (!p) return;
+  resetSituation(); S.proc = 'dis2'; S.dis = {minor:p.minor, type:p.type, lost:false}; S.applicant = p.name; S.docs = {};
+  S.understood = ["Renouvellement préparé depuis le radar", `Carte ${p.typeFr.toLowerCase()}`, p.minor ? 'Mineur' : 'Majeur'];
+  S.step = 2; setTab('Counter'); renderAll();
+}
+function callScript(id){
+  const p = PEOPLE.find(x => x.id === id), r = risk(p), docs = ['صورة شمسية','بطاقة الإعاقة الحالية','شهادة طبية حسب أنموذج الوزارة'].concat(p.type==='auditive'?['شهادة في قيس السمع']:p.type==='visuelle'?['شهادة في قيس البصر']:[]);
+  $('modalHost').innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt"><div class="panel box">
+    <h2 id="mt" style="font-size:18px;font-weight:600">Appel à ${esc(p.name)}</h2>
+    <p class="muted" style="margin:0;font-size:13.5px">Message enregistré en darija, lu par l'agent ou diffusé automatiquement. La personne n'a rien à composer : elle répond « iyeh » ou « le ».</p>
+    <div class="ar" style="background:var(--bg);border-radius:8px;padding:12px;line-height:1.9;font-size:15.5px">عسلامة، معاك الوحدة المحلية للنهوض الاجتماعي بقابس. بطاقة الإعاقة متاعك ${r.d < 0 ? 'وفات' : 'باش توفى'} نهار ${p.expires.toLocaleDateString('ar-TN')}. حضرنالك ملف التجديد. باش يكمل، لازم : ${docs.join('، ')}. تحب نعطيوك موعد؟ قول إيه ولا لا.</div>
+    <p style="margin:0;font-size:13.5px">En français : votre carte ${r.d < 0 ? 'a expiré' : 'expire'} le ${fmt(p.expires)}. Nous avons préparé votre renouvellement. Il manque : photo, carte actuelle, certificat médical sur le modèle du ministère${p.type==='auditive'?', audiogramme':p.type==='visuelle'?', mesure de la vue':''}. Voulez-vous un rendez-vous ?</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" id="mPrep" type="button">Préparer le dossier</button><button class="btn primary" id="mClose" type="button">Fermer</button></div></div></div>`;
+  $('mClose').onclick = () => $('modalHost').innerHTML = '';
+  $('mPrep').onclick = () => { $('modalHost').innerHTML = ''; prepFor(id); };
+}
+
+/* ============================================================
+   METHOD
+   ============================================================ */
+function renderMethod(){
+  const L = (t,u) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`;
+  $('method').innerHTML = `
+  <div class="panel" style="grid-column:1/-1"><h3>Pour qui, et pourquoi maintenant</h3>
+    <div class="stat">
+      <div><span class="n">2 020 772</span><span class="l">personnes de 60 ans et plus, 16,88 % de la population (recensement 2024)</span></div>
+      <div><span class="n">1 373 384</span><span class="l">personnes avec au moins une limitation fonctionnelle, dont 375 600 en incapacité sévère (recensement 2024)</span></div>
+      <div><span class="n">180 273</span><span class="l">titulaires de la carte d'handicap, la porte d'entrée de leurs droits (recensement 2024)</span></div>
+      <div><span class="n">1 / 10 000</span><span class="l">un travailleur social pour 10 000 habitants, contre 1 pour 4 500 en moyenne mondiale (cadres du ministère, ARP 2023)</span></div>
+    </div>
+    <p style="margin:12px 0 0">Pour ces personnes, chaque démarche coûte plusieurs déplacements : une pièce oubliée ou périmée, un bureau à l'étage, une file d'attente debout, un échange impossible pour une personne sourde. Les droits existent ; c'est le parcours qui les rend inaccessibles.</p>
+    <p style="margin:10px 0 0"><b>Née d'un besoin vécu.</b> L'idée vient d'un membre de l'équipe, usager en situation de handicap du régime APCI de la CNAM. Pas d'étude menée derrière un écran : il a vécu la démarche, il en a nommé les blocages, et chaque fonction répond à l'un d'eux. Il teste chaque écran en premier. Les personnes concernées ne sont pas seulement les utilisateurs de la solution : elles en sont la source. <span class="ar" style="color:var(--ink)">« ما يحسّ بالجمرة كان اللي يعفس عليها »</span> : seul celui qui marche sur la braise en sent la brûlure.</p></div>
+  <div class="panel" style="grid-column:1/-1"><h3>Un seul parcours, cinq moments</h3>
+    <div class="journey">
+      <div><b>1 · Savoir</b><span>La situation dite en darija donne la démarche, l'institution compétente et la liste légale exacte des pièces.</span></div>
+      <div><b>2 · Préparer chez soi</b><span>Chaque pièce est photographiée et vérifiée par l'IA avant tout déplacement : type, dates, validité, concordance.</span></div>
+      <div><b>3 · S'identifier</b><span>Le profil social QR, signé par le ministère, remplit n'importe quel formulaire.</span></div>
+      <div><b>4 · Venir en priorité</b><span>Créneau à heure fixe, priorité légale appliquée, itinéraire sans marches, accompagnement si besoin.</span></div>
+      <div><b>5 · Déposer en un passage</b><span>Au guichet Dossier prêt, l'IA rapproche les originaux de la version vérifiée ; mode sourd au guichet.</span></div>
+    </div></div>
+  <div class="panel"><h3>Ce que fait l'IA, et ce qu'elle ne fait pas</h3><div class="arch">
+    <div><b>Comprendre</b><span>Darija, arabe, français : Whisper affiné sur le dialecte tunisien dans le pilote ; analyse par lexique dans ce prototype.</span></div>
+    <div><b>Dire le droit</b><span>Un moteur de règles tiré des fiches et des textes du ministère produit la liste des pièces et cite le texte. Le modèle de langage reformule, il ne décide jamais.</span></div>
+    <div><b>Lire les pièces</b><span>OCR arabe et français, classification, dates, validité, modèle du ministère ; repérage d'anomalies. L'authenticité se constate au guichet, sur l'original.</span></div>
+    <div><b>Rapprocher</b><span>Au guichet, comparaison de l'original scanné avec la version vérifiée : dates, numéros, texte. Un écart est signalé ; l'agent décide.</span></div>
+    <div><b>Remplir</b><span>Lecture du formulaire vierge, correspondance des libellés arabes et français, valeurs du profil QR posées au bon endroit.</span></div>
+    <div><b>Accessibilité</b><span>Itinéraire sans marches sur le réseau piéton ; mode sourd avec le vocabulaire du guichet signé par des personnes sourdes et un interprète en relais.</span></div></div></div>
+  <div class="panel"><h3>Impact mesuré dès le pilote</h3><ul>
+    <li><b>Déplacements par dossier</b> : objectif, un seul passage.</li>
+    <li><b>Dossiers complets au premier dépôt</b>, et motifs des pièces refusées.</li>
+    <li><b>Attente des personnes prioritaires</b> au guichet, comparée à l'accueil ordinaire.</li>
+    <li><b>Minutes de l'agent par dossier</b> et taux de concordance entre originaux et versions vérifiées.</li>
+    <li><b>Satisfaction</b> des personnes âgées, handicapées et sourdes, recueillie en darija.</li>
+    <li>Test avec de vrais usagers et agents dans une ULPS de Gabès, résultats documentés pour la finale.</li></ul></div>
+  <div class="panel"><h3>Déployable dans l'existant</h3><ul>
+    <li><b>Un guichet, pas un système</b> : le guichet Dossier prêt occupe un agent quelques demi-journées par semaine, au rez-de-chaussée de l'ULPS.</li>
+    <li><b>Complète Khadamet et l'Espace citoyen</b> : l'application gouvernementale Khadamet (lancée le 31 août 2026, services CNAM et CNSS via l'identité numérique), l'Espace citoyen du ministère (carte d'invalidité en ligne, carte à QR code, décembre 2025) et la plateforme AMEN. D-marche offre le même parcours à celles et ceux qui ne peuvent pas s'en servir seuls, grâce au mode relais (un proche, une association, l'agent) ; le profil social QR peut s'appuyer sur l'identité numérique de Khadamet.</li>
+    <li><b>Interopérable</b> : la CNSS, la CNRPS et la CNAM relèvent de la tutelle du ministère des Affaires sociales ; le profil social QR réunit leurs identifiants.</li>
+    <li><b>Sans smartphone</b> : appel en absence au numéro de l'ULPS, l'ULPS rappelle (pilote).</li>
+    <li>Modèles open source, hébergement par le ministère, aucune donnée de santé dans le QR.</li></ul></div>
+  <div class="panel"><h3>Garde-fous et phase 2</h3><ul>
+    <li>L'IA peut dire oui, jamais non : tout refus relève de l'agent et de la commission.</li>
+    <li>Chaque règle cite son texte ; chaque suggestion est tracée. Données minimisées, consentement, loi organique 2004-63 et contrôle de l'INPDP.</li>
+    <li><b>Phase 2</b> : réseau de bénévoles vérifiés par des associations (accompagnement, aide à remplir), reconnus par des badges ; signalements d'accessibilité par les usagers, sur le modèle de l'application indienne Sugamya Bharat ; extension aux procédures de la CNSS, de la CNRPS et de la CNAM.</li>
+    <li>Ce prototype utilise uniquement des personnes et des documents fictifs.</li></ul>
+    <p class="refs" style="margin-top:12px">Sources : ${L("INS, recensement 2024 (personnes âgées)","https://www.webmanagercenter.com/2025/09/29/552552/tunisie-les-seniors-representent-1688-de-la-population-en-2024-selon-le-dernier-recensement")} · ${L("Recensement 2024 (handicap)","https://managers.tn/2025/09/30/375-600-tunisiens-vivent-avec-une-incapacite-severe/")} · ${L("ARP, audition du ministre, novembre 2023","https://www.arp.tn/ar_SY/blog/1/post/8185")} · ${L("Loi 2005-83, priorité d'accueil (CAWTAR)","https://wrcati.cawtar.org/index.php?a=d&faq=410")} · ${L("Décret 2020-317 (AMEN)","https://9anoun.tn/fr/kb/jorts/jort-2020-045-16bbe/decret-gouvernemental-ndeg-2020-317-du-19-mai-2020-fixant-les-conditions-et-les-procedures-de-benefice-de-retrait-et-dopposition-au-programme-amen-social-3-674cd9a34916053b99b30e933d50d86b")} · ${L("Plateforme de la carte d'invalidité (La Presse, déc. 2025)","https://www.lapresse.tn/2025/12/05/affaires-sociales-lancement-de-la-plateforme-numerique-pour-loctroi-de-la-carte-dinvalidite/")} · ${L("Lancement de Khadamet (La Presse, août 2026)","https://www.lapresse.tn/2026/08/31/permis-taxes-cnam-etat-civil-la-tunisie-lance-une-application-pour-tout-centraliser/")} · ${L("Sugamya Bharat (All India Radio, 2025)","https://www.newsonair.gov.in/revamped-sugamya-bharat-app-unveiled-with-ai-chatbot-enhanced-support-for-divyangjan-elderly")} · ${Object.values(SRC).map(x => L(esc(x.t), x.u)).join(' · ')}</p></div>`;
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+function setTab(name){
+  ['Counter','Karti','Rdv','Guichet','Radar','Method'].forEach(n => { $('tab'+n).setAttribute('aria-selected', n===name); $('view'+n).hidden = n !== name; });
+  if (name !== 'Karti' && typeof stopCamera === 'function') stopCamera();
+  if (name === 'Karti' && typeof openKarti === 'function') openKarti();
+  if (name === 'Radar') renderRadar();
+  if (name === 'Method') renderMethod();
+  if (name === 'Rdv' && typeof renderRdv === 'function') renderRdv();
+  if (name === 'Guichet' && typeof renderGuichet === 'function') renderGuichet();
+  try { history.replaceState(null, '', '#' + name.toLowerCase()); } catch(e){}
+}
+['Counter','Karti','Rdv','Guichet','Radar','Method'].forEach(n => $('tab'+n).onclick = () => setTab(n));
+resetSituation();
+renderAll();
+const h = (location.hash||'').slice(1);
+if (h === 'radar') setTab('Radar'); else if (h === 'method') setTab('Method');
+if ('speechSynthesis' in window) speechSynthesis.getVoices();
+</script>
+
+<canvas id="kCard" width="1012" height="638" class="spec"></canvas>
+<canvas id="kForm" width="900" height="1240" class="spec"></canvas>
+
+<script>
+"use strict";
+/* ============================================================
+   KARTI — data on the card: standard fields only, signed (ECDSA P-256).
+   Demo key embedded here; in production the private key stays in the
+   ministry's HSM and offices only hold the public key.
+   ============================================================ */
+const K_PRIV = {"kty":"EC","crv":"P-256","x":"oDiAZ92G7_2Y1gxyq2cbJh2XMo6475cAJMdeb89BEXM","y":"nvVa6HhBn7JugK47F0x3VByg2W676j-mj620vPiune0","d":"qLLmi2jOht4RfgoHY17xtIe_MaM9_T2T88JVjp51Urc"};
+const K_PUB  = {"kty":"EC","crv":"P-256","x":"oDiAZ92G7_2Y1gxyq2cbJh2XMo6475cAJMdeb89BEXM","y":"nvVa6HhBn7JugK47F0x3VByg2W676j-mj620vPiune0"};
+const KF = [ // key, label FR, label AR, input type
+  ['na',"Nom et prénom (arabe)","الاسم واللقب",'text'], ['nf',"Nom et prénom (latin)","الاسم بالحروف اللاتينية",'text'],
+  ['c',"N° de CIN","رقم بطاقة التعريف",'text'], ['b',"Date de naissance","تاريخ الولادة",'text'],
+  ['pa',"Lieu de naissance (arabe)","مكان الولادة",'text'], ['pf',"Lieu de naissance (latin)","مكان الولادة (لاتيني)",'text'],
+  ['aa',"Adresse (arabe)","العنوان",'text'], ['af',"Adresse (latin)","العنوان (لاتيني)",'text'],
+  ['ga',"Gouvernorat (arabe)","الولاية",'text'], ['gf',"Gouvernorat (latin)","الولاية (لاتيني)",'text'],
+  ['t',"Téléphone","الهاتف",'text'], ['s',"Identifiant social AMEN","المعرف الاجتماعي",'text'],
+  ['a',"N° d'affiliation (CNSS / CNRPS)","رقم الانخراط",'text'], ['m',"N° d'assuré social (CNAM)","رقم المضمون الاجتماعي",'text'],
+  ['h',"Personnes dans le foyer","عدد أفراد الأسرة",'number']
+];
+const K = {
+  step:0,
+  holder:{na:"فاطمة الحامدي", nf:"Fatma HAMDI", c:"08123456", b:"02/05/1979", pa:"قابس", pf:"Gabès",
+          aa:"12 نهج الحرية، قابس الغربية 6000", af:"12 rue de la Liberté, 6000 Gabès Ouest", ga:"قابس", gf:"Gabès",
+          t:"98 000 111", s:"AMN-61-0042-7781", a:"CNSS 1234567-89", m:"CNAM 7905 0812 34", h:"5", p:false},
+  qr:null, issued:null, tampered:false, scan:null, form:'amen', fill:null, busy:false
+};
+const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const ub64u = s => { s = s.replace(/-/g,'+').replace(/_/g,'/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
+const ORDER = ['v','na','nf','c','b','pa','pf','aa','af','ga','gf','t','s','a','m','h','p','i','d'];
+function canonical(o){ const x = {}; ORDER.forEach(k => { if (o[k] !== undefined && o[k] !== '') x[k] = o[k]; }); return JSON.stringify(x); }
+let kKeys = null;
+async function keys(){
+  if (kKeys) return kKeys;
+  const alg = {name:'ECDSA', namedCurve:'P-256'};
+  kKeys = { priv: await crypto.subtle.importKey('jwk', K_PRIV, alg, false, ['sign']), pub: await crypto.subtle.importKey('jwk', K_PUB, alg, false, ['verify']) };
+  return kKeys;
+}
+async function issue(){
+  const h = K.holder, payload = {v:1, ...Object.fromEntries(KF.map(f => [f[0], String(h[f[0]]||'').trim()])), p: h.p ? 1 : undefined, i:"ULPS Gabès Ouest", d:"2026-10-06"};
+  const json = canonical(payload), k = await keys();
+  const sig = await crypto.subtle.sign({name:'ECDSA', hash:'SHA-256'}, k.priv, new TextEncoder().encode(json));
+  K.issued = payload; K.qr = `KRT1|${json}|${b64u(sig)}`; K.tampered = false; K.scan = null;
+}
+async function verify(text){
+  if (!text || !text.startsWith('KRT1|')) return {ok:false, reason:"Ce QR n'est pas une carte Karti."};
+  const last = text.lastIndexOf('|'), json = text.slice(5, last), sig = text.slice(last+1);
+  let data; try { data = JSON.parse(json); } catch(e){ return {ok:false, reason:"Contenu illisible."}; }
+  try{
+    const k = await keys();
+    const ok = await crypto.subtle.verify({name:'ECDSA', hash:'SHA-256'}, k.pub, ub64u(sig), new TextEncoder().encode(canonical(data)));
+    return ok ? {ok:true, data} : {ok:false, data, reason:"Signature invalide : la carte a été modifiée ou n'a pas été émise par le ministère."};
+  }catch(e){ return {ok:false, data, reason:"Signature illisible."}; }
+}
+function tamper(){
+  if (!K.qr) return;
+  const last = K.qr.lastIndexOf('|'), data = JSON.parse(K.qr.slice(5, last));
+  data.c = "08123457"; data.h = "7";                 // forged values, old signature kept
+  K.qr = `KRT1|${canonical(data)}|${K.qr.slice(last+1)}`; K.tampered = true; K.scan = null;
+}
+
+/* ---------- card rendering (ID-1 format, 85.6 × 54 mm) ---------- */
+function drawCard(){
+  const c = $('kCard'), g = c.getContext('2d'), W = c.width, H = c.height, h = K.issued || K.holder;
+  g.fillStyle = '#ffffff'; g.fillRect(0,0,W,H);
+  g.fillStyle = '#12507A'; g.fillRect(0,0,W,86);
+  g.fillStyle = '#ffffff'; g.font = '600 38px "Readex Pro", Arial'; g.textAlign = 'left'; g.direction = 'ltr'; g.fillText('Karti', 36, 57);
+  g.font = '600 36px "IBM Plex Sans Arabic", Arial'; g.textAlign = 'right'; g.direction = 'rtl'; g.fillText('كارتي', W - 36, 58);
+  g.font = '500 20px "IBM Plex Sans Arabic", Arial'; g.textAlign = 'center'; g.direction = 'ltr'; g.fillText('Carte d\'accès aux services sociaux · prototype', W/2, 54);
+  // QR
+  if (K.qr && window.qrcode){
+    qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+    const q = qrcode(0, 'M'); q.addData(K.qr, 'Byte'); q.make();
+    const n = q.getModuleCount(), size = 430, cell = Math.floor(size / (n + 8)), off = 36 + Math.floor((size - cell*(n+8))/2) + cell*4, top = 130 + Math.floor((size - cell*(n+8))/2) + cell*4;
+    g.fillStyle = '#ffffff'; g.fillRect(36, 130, size, size);
+    g.fillStyle = '#000000';
+    for (let r = 0; r < n; r++) for (let col = 0; col < n; col++) if (q.isDark(r, col)) g.fillRect(off + col*cell, top + r*cell, cell, cell);
+    K.qrVersion = Math.round((n - 17) / 4);
+  }
+  // identity block
+  const x = W - 36; g.textAlign = 'right'; g.direction = 'rtl'; g.fillStyle = '#14201D';
+  g.font = '700 46px "IBM Plex Sans Arabic", Arial'; g.fillText(h.na || '', x, 186);
+  g.direction = 'ltr'; g.font = '600 32px "IBM Plex Sans Arabic", Arial'; g.fillText(h.nf || '', x, 232);
+  g.font = '400 25px "IBM Plex Mono", monospace'; g.fillStyle = '#334';
+  const rows = [['CIN', (h.c||'').replace(/(\d{2})(\d{3})(\d{3})/, '$1 $2 $3')], ['Né(e) le', h.b], ['Foyer', `${h.h} pers.`]];
+  rows.forEach(([k,v], i) => { g.fillStyle = '#56635F'; g.font = '400 22px "IBM Plex Sans Arabic", Arial'; g.fillText(k, x - 330, 296 + i*52); g.fillStyle = '#14201D'; g.font = '500 26px "IBM Plex Mono", monospace'; g.fillText(v || '', x, 296 + i*52); });
+  g.fillStyle = '#56635F'; g.font = '400 21px "IBM Plex Sans Arabic", Arial'; g.fillText("Émise par l'ULPS Gabès Ouest le 06/10/2026", x, 296 + 3*52);
+  if (h.p){ g.fillStyle = '#23704A'; g.fillRect(x - 260, 500, 260, 44); g.fillStyle = '#fff'; g.font = '600 22px "IBM Plex Sans Arabic", Arial'; g.fillText('Accueil prioritaire', x - 18, 530); }
+  g.save(); g.translate(W/2 + 120, H - 28); g.fillStyle = 'rgba(163,39,31,.75)'; g.textAlign = 'center'; g.direction = 'ltr';
+  g.font = '600 20px "IBM Plex Sans Arabic", Arial'; g.fillText('SPÉCIMEN FICTIF · نموذج تجريبي · aucune valeur officielle', 0, 0); g.restore();
+  g.strokeStyle = '#C9D2CE'; g.lineWidth = 2; g.strokeRect(1,1,W-2,H-2);
+  return c;
+}
+
+/* ---------- QR scanning (jsQR) ---------- */
+function decodeFromCanvas(cv){
+  const g = cv.getContext('2d', {willReadFrequently:true}), d = g.getImageData(0,0,cv.width,cv.height);
+  const r = jsQR(d.data, cv.width, cv.height, {inversionAttempts:'attemptBoth'});
+  if (!r) return null;
+  try { return new TextDecoder('utf-8').decode(new Uint8Array(r.binaryData)); } catch(e){ return r.data; }
+}
+async function scanText(text, source){
+  K.scan = {busy:true}; renderKarti();
+  const v = await verify(text);
+  K.scan = {...v, source, at:new Date()}; renderKarti();
+}
+let kStream = null;
+async function startCamera(){
+  const msg = $('kCamMsg');
+  try{
+    kStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const vid = $('kVideo'); vid.srcObject = kStream; vid.hidden = false; await vid.play();
+    const cv = document.createElement('canvas');
+    const tick = () => { if (!kStream) return; if (vid.readyState >= 2){ cv.width = vid.videoWidth; cv.height = vid.videoHeight; cv.getContext('2d').drawImage(vid,0,0); const t = decodeFromCanvas(cv); if (t){ stopCamera(); scanText(t, 'caméra'); return; } } requestAnimationFrame(tick); };
+    tick();
+  }catch(e){ if (msg) msg.textContent = "Caméra indisponible ici : téléversez une photo de la carte, ou scannez la carte affichée."; }
+}
+function stopCamera(){ if (kStream){ kStream.getTracks().forEach(t => t.stop()); kStream = null; } const v = $('kVideo'); if (v) v.hidden = true; }
+
+/* ============================================================
+   FORM UNDERSTANDING — OCR the blank form, find each label,
+   match it to a card field (arabic or french wording), write the value next to it.
+   ============================================================ */
+const SYN = {
+  na:{fr:['nom et prenom','nom & prenom','nom prenom','prenom et nom','nom'], ar:['الاسم واللقب','الاسم و اللقب','اللقب والاسم','الاسم']},
+  c:{fr:['n° cin','numero cin','c.i.n','cin','carte d\'identite','carte nationale'], ar:['رقم بطاقه التعريف الوطنيه','رقم بطاقه التعريف','بطاقه التعريف','ب.ت.و','ب ت و']},
+  b:{fr:['date de naissance','ne(e) le','nee le','ne le'], ar:['تاريخ الولاده','تاريخ الازدياد']},
+  p:{fr:['lieu de naissance'], ar:['مكان الولاده','مكان الازدياد']},
+  ad:{fr:['adresse','domicile'], ar:['عنوان السكني','العنوان','مقر السكني']},
+  g:{fr:['gouvernorat'], ar:['الولايه']},
+  t:{fr:['telephone','tel','gsm','portable'], ar:['رقم الهاتف','الهاتف','الجوال']},
+  s:{fr:['identifiant social','identifiant unique'], ar:['المعرف الاجتماعي','المعرف الوحيد']},
+  a:{fr:['n° d\'affiliation','numero d\'affiliation','affiliation','cnss','cnrps','matricule'], ar:['رقم الانخراط','رقم الضمان الاجتماعي']},
+  h:{fr:['nombre de membres','membres du foyer','taille du foyer'], ar:['عدد افراد الاسره','عدد الافراد']},
+  m:{fr:['assure social','n° assure','numero d\'assure','cnam'], ar:['رقم المضمون الاجتماعي','المضمون الاجتماعي','الكنام']}
+};
+const FIELD_FR = {na:"Nom et prénom", c:"N° de CIN", b:"Date de naissance", p:"Lieu de naissance", ad:"Adresse", g:"Gouvernorat", t:"Téléphone", s:"Identifiant social", a:"N° d'affiliation", m:"N° d'assuré social (CNAM)", h:"Personnes dans le foyer"};
+function valueFor(field, script, d){
+  const ar = script === 'ar';
+  switch(field){
+    case 'na': return ar ? d.na : d.nf; case 'p': return ar ? d.pa : d.pf; case 'ad': return ar ? d.aa : d.af; case 'g': return ar ? d.ga : d.gf;
+    case 'c': return d.c; case 'b': return d.b; case 't': return d.t; case 's': return d.s; case 'a': return d.a; case 'm': return d.m || ''; case 'h': return d.h;
+  }
+  return '';
+}
+const isAr = s => /[؀-ۿ]/.test(s);
+const nl = s => norm(s).replace(/[\.…_:،,;]+/g,' ').replace(/\s+/g,' ').trim();
+function tri(s){ const t = ` ${s} `, out = new Set(); for (let i = 0; i < t.length - 2; i++) out.add(t.slice(i, i+3)); return out; }
+function jacc(a, b){ const A = tri(a), B = tri(b); let n = 0; A.forEach(x => { if (B.has(x)) n++; }); return n / (A.size + B.size - n || 1); }
+function matchLine(text){
+  const t = nl(text); if (!t || t.length < 2) return null;
+  const toks = new Set(t.split(' '));
+  // dotted abbreviations (C.I.N, ب.ت.و) often come back from OCR as "c ln" or "c 1 n": rebuild them
+  const abbr = []; let run = '';
+  t.replace(/[\u200e\u200f]/g,'').split(' ').concat(['']).forEach(w => { const x = w.replace(/[^a-z0-9|؀-ۿ]/g,''); if (x && x.length <= 2) run += x; else { if (run.length >= 2) abbr.push(run.replace(/[l1|]/g,'i').replace(/0/g,'o').replace(/5/g,'s')); run = ''; } });
+  let best = null;
+  for (const [field, langs] of Object.entries(SYN)) for (const [script, list] of Object.entries(langs)) for (const syn of list){
+    const s = nl(syn); let score = 0;
+    const sq = s.replace(/[^a-z0-9؀-ۿ]/g,'');
+    if (s.length >= 5 ? t.includes(s) : toks.has(s)) score = 0.7 + Math.min(0.3, s.length / 60);
+    else if (sq.length >= 2 && sq.length <= 4 && abbr.some(a => a.startsWith(sq))) score = 0.72;
+    else { const j = jacc(t.length > s.length + 14 ? t.slice(0, s.length + 14) : t, s); if (j >= 0.42) score = j * 0.9; if (script === 'ar'){ const j2 = jacc(t.slice(-(s.length+14)), s); if (j2 >= 0.42) score = Math.max(score, j2*0.9); } }
+    if (score && (!best || score > best.score)) best = {field, script, syn, score};
+  }
+  return best;
+}
+const FORMS = {
+  amen:{t:"Demande AMEN (arabe)", dir:'rtl', title:["مطلب ترشح للانتفاع ببرنامج الأمان الاجتماعي","نموذج تجريبي"],
+    labels:["الاسم واللقب :","رقم بطاقة التعريف الوطنية :","تاريخ الولادة :","مكان الولادة :","العنوان :","الولاية :","رقم الهاتف :","عدد أفراد الأسرة :","المعرف الاجتماعي :","الدخل الشهري للأسرة :","الإمضاء :"]},
+  hand:{t:"Carte d'handicap (français)", dir:'ltr', title:["DEMANDE DE CARTE D'HANDICAP","Modèle de démonstration"],
+    labels:["Nom et prénom :","N° CIN :","Date de naissance :","Lieu de naissance :","Adresse :","Gouvernorat :","Téléphone :","N° d'affiliation CNSS / CNRPS :","N° d'assuré social CNAM :","Nature du handicap :","Signature :"]},
+  mixte:{t:"Formulaire bilingue d'une autre administration", dir:'bi', title:["Demande d'aide scolaire · مطلب مساعدة مدرسية","Modèle inconnu de l'outil"],
+    labels:[["Né(e) le","تاريخ الازدياد"],["Nom & Prénom","الإسم و اللقب"],["C.I.N","ب.ت.و"],["Domicile","عنوان السكنى"],["GSM","الجوال"],["Classe de l'élève","قسم التلميذ"]]}
+};
+function drawForm(key){
+  const c = $('kForm'), g = c.getContext('2d'), F = FORMS[key], W = c.width;
+  g.fillStyle = '#ffffff'; g.fillRect(0,0,W,c.height); g.fillStyle = '#111'; g.strokeStyle = '#111';
+  g.textAlign = 'center'; g.direction = isAr(F.title[0]) && F.dir !== 'ltr' ? 'rtl' : 'ltr';
+  g.font = '700 34px "IBM Plex Sans Arabic", Arial'; g.fillText(F.title[0], W/2, 90);
+  g.font = '400 22px "IBM Plex Sans Arabic", Arial'; g.fillStyle = '#555'; g.direction = 'ltr'; g.fillText(F.title[1], W/2, 128);
+  g.fillStyle = '#111'; g.lineWidth = 1.5;
+  F.labels.forEach((lab, i) => {
+    const y = 220 + i * 88;
+    if (F.dir === 'rtl'){ g.textAlign = 'right'; g.direction = 'rtl'; g.font = '500 28px "IBM Plex Sans Arabic", Arial'; g.fillText(lab, W - 60, y); const w = g.measureText(lab).width; g.beginPath(); g.moveTo(60, y + 8); g.lineTo(W - 80 - w, y + 8); g.stroke(); }
+    else if (F.dir === 'ltr'){ g.textAlign = 'left'; g.direction = 'ltr'; g.font = '500 28px "IBM Plex Sans Arabic", Arial'; g.fillText(lab, 60, y); const w = g.measureText(lab).width; g.beginPath(); g.moveTo(80 + w, y + 8); g.lineTo(W - 60, y + 8); g.stroke(); }
+    else { g.font = '500 27px "IBM Plex Sans Arabic", Arial'; g.textAlign = 'left'; g.direction = 'ltr'; g.fillText(lab[0], 60, y); const w0 = g.measureText(lab[0]).width; g.textAlign = 'right'; g.direction = 'rtl'; g.fillText(lab[1], W - 60, y); const w1 = g.measureText(lab[1]).width; g.beginPath(); g.moveTo(80 + w0, y + 8); g.lineTo(W - 80 - w1, y + 8); g.stroke(); }
+  });
+  g.textAlign = 'center'; g.direction = 'ltr'; g.font = '600 18px "IBM Plex Sans Arabic", Arial'; g.fillStyle = 'rgba(163,39,31,.7)'; g.fillText('Formulaire fictif de démonstration · نموذج وهمي', W/2, c.height - 40);
+  return c;
+}
+function linesFrom(data){
+  if (data.lines && data.lines.length) return data.lines;
+  const out = []; (data.blocks || []).forEach(b => (b.paragraphs || []).forEach(p => (p.lines || []).forEach(l => out.push(l))));
+  return out;
+}
+async function fillForm(source){
+  K.busy = true; K.fill = null; renderKarti();
+  const d = K.scan && K.scan.ok ? K.scan.data : null;
+  try{
+    const w = await getWorker();
+    const { data } = await w.recognize(source, {}, {blocks:true, text:true});
+    const lines = linesFrom(data);
+    // match each line, keep the best line per field
+    const cands = lines.map(l => ({l, m:matchLine(l.text)})).filter(x => x.m);
+    const byField = {}; cands.forEach(x => { const f = x.m.field; if (!byField[f] || x.m.score > byField[f].m.score) byField[f] = x; });
+    // draw
+    const src = source instanceof HTMLCanvasElement ? source : await toCanvas(source);
+    const out = document.createElement('canvas'); out.width = src.width; out.height = src.height;
+    const g = out.getContext('2d'); g.drawImage(src, 0, 0);
+    const rows = [];
+    const scale = src.width / 900;
+    for (const [field, x] of Object.entries(byField)){
+      const val = d ? valueFor(field, x.m.script, d) : '';
+      const words = (x.l.words || []).filter(wd => !/^[\.\…_\-–:،,;\s]*$/.test(wd.text));
+      const edge = (x.l.words || []).filter(wd => !/^[\.\…_\-–\s]*$/.test(wd.text)); // keeps the colon, so the value never touches it
+      const ar = words.filter(wd => isAr(wd.text)), la = words.filter(wd => !isAr(wd.text));
+      const bb = x.l.bbox, yb = bb.y1 - 4 * scale;
+      g.fillStyle = x.m.score >= 0.6 ? '#1b3f9a' : '#b25c00'; g.font = `500 ${Math.round(28*scale)}px "IBM Plex Sans Arabic", Arial`;
+      // a wide empty gap inside the line = two labels (bilingual form, whatever OCR thinks the script is): write in the gap
+      const sx = edge.slice().sort((a,b) => a.bbox.x0 - b.bbox.x0); let gapB = null;
+      for (let i = 0; i < sx.length - 1; i++){ const w = sx[i+1].bbox.x0 - sx[i].bbox.x1; if (w > 120*scale && (!gapB || w > gapB.w)) gapB = {l:sx[i].bbox.x1, r:sx[i+1].bbox.x0, w}; }
+      if (gapB){
+        g.textAlign = 'center'; g.direction = isAr(val) ? 'rtl' : 'ltr'; g.fillText(val, (gapB.l + gapB.r) / 2, yb);
+      } else if (ar.length && la.length){ // bilingual line: write between the two labels
+        const left = Math.max(...la.map(wd => wd.bbox.x1)), right = Math.min(...ar.map(wd => wd.bbox.x0));
+        g.textAlign = 'center'; g.direction = isAr(val) ? 'rtl' : 'ltr'; g.fillText(val, (left + right) / 2, yb);
+      } else if (x.m.script === 'ar'){
+        const left = edge.length ? Math.min(...edge.map(wd => wd.bbox.x0)) : bb.x0;
+        g.textAlign = 'right'; g.direction = isAr(val) ? 'rtl' : 'ltr'; g.fillText(val, left - 18*scale, yb);
+      } else {
+        const right = edge.length ? Math.max(...edge.map(wd => wd.bbox.x1)) : bb.x1;
+        g.textAlign = 'left'; g.direction = isAr(val) ? 'rtl' : 'ltr'; g.fillText(val, right + 18*scale, yb);
+      }
+      rows.push({read:x.l.text.trim(), field, val, score:x.m.score});
+    }
+    // labels the card cannot answer: lines with a colon, or (forms without colons) lines inside the band of matched labels
+    const ys = Object.values(byField).map(x => x.l.bbox.y0).sort((a,b) => a - b);
+    const gaps = ys.slice(1).map((y, i) => y - ys[i]).sort((a,b) => a - b), gap = gaps.length ? gaps[gaps.length >> 1] : 0;
+    const inBand = l => ys.length > 1 && l.bbox.y0 > ys[0] && l.bbox.y0 < ys[ys.length-1] + 1.5 * gap;
+    const unmatched = lines.filter(l => (/[:：]/.test(l.text) || inBand(l)) && !Object.values(byField).some(x => x.l === l)).map(l => l.text.replace(/[\u200e\u200f:：]/g,'').replace(/\s+/g,' ').trim()).filter(t => t.length > 2);
+    K.fill = {img: out.toDataURL('image/png'), rows: rows.sort((a,b) => b.score - a.score), unmatched, noCard: !d};
+  }catch(e){
+    K.fill = {error:"La lecture automatique n'est pas disponible dans cet aperçu."};
+  }
+  K.busy = false; renderKarti();
+}
+function toCanvas(file){ return new Promise((res, rej) => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); const s = Math.min(1, 1400 / img.width); c.width = img.width * s; c.height = img.height * s; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); res(c); }; img.onerror = rej; img.src = URL.createObjectURL(file); }); }
+
+/* ---------- online form (web portal) filled from the same card ---------- */
+const WEBFORM = [["Nom & prénom du demandeur","n1"],["رقم بطاقة التعريف الوطنية","n2"],["Date de naissance","n3"],["العنوان","n4"],["Téléphone mobile","n5"],["Identifiant social (AMEN)","n6"],["Profession","n7"]];
+function fillWebForm(){
+  const d = K.scan && K.scan.ok ? K.scan.data : null; if (!d) return;
+  WEBFORM.forEach(([lab, id]) => { const m = matchLine(lab); const el = $('wf_'+id); if (!el) return;
+    if (m){ el.value = valueFor(m.field, m.script, d); el.dataset.filled = '1'; } else { el.value = ''; el.dataset.filled = ''; el.placeholder = "À compléter par l'agent"; } });
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function kLibs(){ return Promise.all([ window.qrcode ? 0 : loadScript('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js'), window.jsQR ? 0 : loadScript('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js') ]); }
+async function openKarti(){ try { await kLibs(); } catch(e){} if (!K.qr) { try { await issue(); } catch(e){} } renderKarti(); }
+function kCardImg(){ try { drawCard(); return $('kCard').toDataURL('image/png'); } catch(e){ return ''; } }
+function renderKarti(){
+  document.querySelectorAll('.k-tabs [data-k]').forEach(b => { b.setAttribute('aria-pressed', String(+b.dataset.k === K.step)); b.onclick = () => { K.step = +b.dataset.k; stopCamera(); renderKarti(); }; });
+  const st = $('kStage'), h = K.holder;
+  const canPrint = (() => { try { return window.self === window.top; } catch(e){ return false; } })();
+  if (K.step === 0){
+    st.innerHTML = `<div class="k-grid">
+      <div class="panel" style="padding:18px"><h3 class="k-h">Données de la carte <span class="muted" style="font-weight:400">(champs standards uniquement)</span></h3>
+        <div class="k-fields">${KF.map(([k,fr,ar,type]) => `<label class="k-f"><span>${fr}<span class="ar">${ar}</span></span><input id="kf_${k}" type="${type}" value="${esc(h[k])}" dir="auto"></label>`).join('')}
+          <label class="k-f k-check"><input id="kf_p" type="checkbox" ${h.p?'checked':''}><span>Accueil prioritaire (avec l'accord de la personne)<span class="ar">أولوية الاستقبال</span></span></label></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn primary" id="kIssue" type="button">Signer et imprimer la carte</button></div>
+        <p class="muted" style="font-size:12.5px;margin:10px 0 0">Aucune donnée de santé ni de revenu sur la carte. Elle sert à remplir, pas à décider ; l'identité reste vérifiée avec la CIN, comme aujourd'hui.</p></div>
+      <div style="display:grid;gap:12px;align-content:start">
+        <div class="panel" style="padding:14px"><img class="k-card" src="${kCardImg()}" alt="Carte Karti de démonstration au nom de ${esc(h.nf)}"></div>
+        <dl class="kv panel" style="padding:14px"><dt>Format</dt><dd>Carte ID-1 (85,6 × 54 mm) ou autocollant sur la carte d'handicap ou de soins</dd>
+          <dt>QR</dt><dd>Version ${K.qrVersion || '—'}, correction d'erreur M, ${K.qr ? new TextEncoder().encode(K.qr).length : 0} octets</dd>
+          <dt>Signature</dt><dd>ECDSA P-256 (SHA-256), vérifiable sans connexion</dd>
+          <dt>Si elle est perdue</dt><dd>Réimprimée à l'ULPS en une minute, sur l'imprimante existante</dd></dl>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${canPrint?'<button class="btn" id="kPrint" type="button">Imprimer la carte</button>':''}<button class="btn" id="kGoScan" type="button">Passer au scan</button></div>
+      </div></div>`;
+    $('kIssue').onclick = async () => { KF.forEach(([k]) => { h[k] = $('kf_'+k).value; }); h.p = $('kf_p').checked; await issue(); renderKarti(); };
+    $('kGoScan').onclick = () => { K.step = 1; renderKarti(); };
+    const kp = $('kPrint'); if (kp) kp.onclick = () => { const w = window.open(''); if (w){ w.document.write(`<img src="${$('kCard').toDataURL()}" style="width:85.6mm">`); w.print(); } };
+  }
+  if (K.step === 1){
+    const s = K.scan, cam = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    st.innerHTML = `<div class="k-grid">
+      <div class="panel" style="padding:18px;display:grid;gap:12px;align-content:start"><h3 class="k-h">Dans n'importe quel bureau</h3>
+        <p class="muted" style="margin:0">La personne montre sa carte. L'agent la scanne avec la webcam ou le téléphone du bureau.</p>
+        <img class="k-card" src="${kCardImg()}" alt="Carte à scanner">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn primary" id="kScanShown" type="button">Scanner la carte affichée</button>
+          <label class="btn">${I.cam} Photo de la carte<input type="file" accept="image/*" capture="environment" id="kScanFile" hidden></label>
+          ${cam ? '<button class="btn" id="kCam" type="button">Caméra en direct</button>' : ''}
+          <button class="btn ghost" id="kTamper" type="button" title="Simule une carte dont on a changé le numéro de CIN et la taille du foyer sans la signature du ministère">Tester une carte falsifiée</button>
+        </div>
+        <span class="muted" id="kCamMsg" style="font-size:13px">${K.tampered ? '⚠ La carte affichée a été falsifiée (CIN et foyer modifiés) : scannez-la pour voir la réaction.' : ''}</span>
+        <video id="kVideo" playsinline muted hidden style="width:100%;border-radius:8px;background:#000"></video>
+      </div>
+      <div class="panel" style="padding:18px">${!s ? `<h3 class="k-h">Résultat du scan</h3><p class="muted" style="margin:0">Scannez la carte pour lire et vérifier ses données.</p>`
+        : s.busy ? `<p>Vérification…</p>`
+        : `<div class="k-verdict ${s.ok?'ok':'bad'}">${s.ok ? '✓ Carte authentique' : '✗ Carte refusée'}</div>
+           <p style="margin:6px 0 12px">${s.ok ? `Signée par le ministère, émise par <b>${esc(s.data.i)}</b> le ${esc(s.data.d)}. Vérifiée hors ligne en quelques millisecondes.` : esc(s.reason)}</p>
+           ${s.data ? `<dl class="kv">${KF.map(([k,fr]) => s.data[k] ? `<dt>${fr}</dt><dd dir="auto" ${!s.ok && ['c','h'].includes(k) ? 'style="color:var(--bad);font-weight:600"' : ''}>${esc(s.data[k])}</dd>` : '').join('')}</dl>` : ''}
+           ${s.ok ? `<div style="margin-top:14px"><button class="btn primary" id="kGoFill" type="button">Remplir un formulaire avec ces données</button></div>` : `<p class="muted" style="font-size:13px;margin-top:12px">Les valeurs en rouge ne correspondent pas à la signature : rien n'est rempli, l'agent revient à la CIN.</p>`}`}
+      </div></div>`;
+    $('kScanShown').onclick = async () => { await kLibs(); drawCard(); const t = decodeFromCanvas($('kCard')); scanText(t, 'carte affichée'); };
+    $('kScanFile').onchange = async e => { const f = e.target.files && e.target.files[0]; if (!f) return; await kLibs(); const c = await toCanvas(f); const t = decodeFromCanvas(c); if (!t){ K.scan = {ok:false, reason:"Aucun QR trouvé sur la photo : recadrez la carte et reprenez la photo."}; renderKarti(); } else scanText(t, 'photo'); };
+    const kc = $('kCam'); if (kc) kc.onclick = async () => { await kLibs(); startCamera(); };
+    $('kTamper').onclick = () => { if (K.tampered){ issue().then(renderKarti); } else { tamper(); renderKarti(); } };
+    const gf = $('kGoFill'); if (gf) gf.onclick = () => { K.step = 2; renderKarti(); };
+  }
+  if (K.step === 2){
+    const ok = K.scan && K.scan.ok, f = K.fill;
+    st.innerHTML = `<div class="k-grid">
+      <div style="display:grid;gap:12px;align-content:start">
+        <div class="panel" style="padding:18px;display:grid;gap:10px"><h3 class="k-h">Choisir le formulaire du bureau</h3>
+          ${ok ? `<p class="muted" style="margin:0">Carte de <b dir="auto">${esc(K.scan.data.nf)}</b> vérifiée. L'IA lit le formulaire vierge, trouve chaque libellé, en arabe ou en français, et écrit la bonne valeur au bon endroit.</p>`
+               : `<p style="margin:0;color:var(--warn)">Scannez d'abord une carte authentique (étape 2) : sans carte vérifiée, rien n'est rempli.</p>`}
+          <div class="seg">${Object.entries(FORMS).map(([k,F]) => `<button type="button" data-form="${k}" aria-pressed="${K.form===k}">${F.t}</button>`).join('')}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="kFill" type="button" ${ok && !K.busy ? '' : 'disabled'}>Remplir ce formulaire</button>
+            <label class="btn ${ok?'':'k-dis'}">${I.cam} Photo d'un autre formulaire vierge<input type="file" accept="image/*" id="kFormFile" hidden ${ok?'':'disabled'}></label></div>
+          <div class="ocrstat" id="kOcrStat"></div>
+        </div>
+        ${f && f.rows ? `<div class="panel" style="padding:16px"><h3 class="k-h">Ce que l'IA a compris du formulaire</h3><div class="tbl-wrap"><table><thead><tr><th>Libellé lu</th><th>Champ</th><th>Valeur posée</th><th>Confiance</th></tr></thead><tbody>
+          ${f.rows.map(r => `<tr><td dir="auto">${esc(r.read)}</td><td>${FIELD_FR[r.field]}</td><td dir="auto">${esc(r.val)}</td><td><span class="pill ${r.score>=0.6?'ok':'warn'}">${Math.round(r.score*100)} %</span></td></tr>`).join('')}</tbody></table></div>
+          ${f.unmatched.length ? `<p class="muted" style="font-size:13px;margin:10px 0 0"><b>Laissé à l'agent</b> (pas sur la carte) : ${f.unmatched.map(esc).join(' · ')}</p>` : ''}
+          <p class="muted" style="font-size:12.5px;margin:8px 0 0">En orange : correspondance moins sûre, l'agent vérifie avant d'imprimer.</p></div>` : ''}
+        <div class="panel" style="padding:16px"><h3 class="k-h">Et pour un portail en ligne</h3><p class="muted" style="margin:0 0 10px;font-size:13.5px">Le même rapprochement des libellés remplit un formulaire web (MySocial, khadamet.gov.tn) à partir de la carte scannée au guichet.</p>
+          <form id="webForm" class="webform" onsubmit="return false">${WEBFORM.map(([lab,id]) => `<label><span dir="auto">${esc(lab)}</span><input id="wf_${id}" dir="auto"></label>`).join('')}</form>
+          <button class="btn" id="kWeb" type="button" ${ok?'':'disabled'} style="margin-top:10px">Remplir depuis la carte</button></div>
+      </div>
+      <div class="panel" style="padding:14px">${K.busy ? `<p class="muted">Lecture du formulaire et placement des valeurs…</p>` : f && f.img ? `<img src="${f.img}" alt="Formulaire rempli automatiquement" class="k-form">${canPrint ? '<button class="btn" id="kPrintForm" type="button" style="margin-top:10px">Imprimer le formulaire rempli</button>' : ''}` : f && f.error ? `<p style="color:var(--warn)">${esc(f.error)}</p>` : `<img src="${(() => { try { return drawForm(K.form).toDataURL('image/png'); } catch(e){ return ''; } })()}" alt="Formulaire vierge" class="k-form"><p class="muted" style="font-size:12.5px;margin:8px 0 0">Formulaire vierge : rien n'a été programmé pour ce modèle, l'IA le découvre en le lisant.</p>`}</div>
+    </div>`;
+    document.querySelectorAll('[data-form]').forEach(b => b.onclick = () => { K.form = b.dataset.form; K.fill = null; renderKarti(); });
+    $('kFill').onclick = () => fillForm(drawForm(K.form));
+    $('kFormFile').onchange = async e => { const fl = e.target.files && e.target.files[0]; if (fl) fillForm(await toCanvas(fl)); };
+    $('kWeb').onclick = fillWebForm;
+    const pf = $('kPrintForm'); if (pf) pf.onclick = () => { const w = window.open(''); if (w){ w.document.write(`<img src="${K.fill.img}" style="width:100%">`); w.print(); } };
+    renderOcrStatus();
+  }
+}
+document.querySelectorAll('.k-tabs [data-k]').forEach(b => b.onclick = () => { K.step = +b.dataset.k; stopCamera(); renderKarti(); });
+if ((location.hash || '').slice(1) === 'karti') setTab('Karti');
+</script>
+<script>
+"use strict";
+/* ============================================================
+   4 · PRIORITY APPOINTMENT (Dawri) and 5 · « DOSSIER PRÊT » WINDOW
+   The window is a dedicated counter at the ULPS, on the ground floor:
+   people come once, with a file already checked at home.
+   ============================================================ */
+const IC = {
+  stairs:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 41h9v-8h9v-8h9v-8h11"/><path d="M38 7l5 5-5 5"/></svg>',
+  clock:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="24" cy="24" r="17"/><path d="M24 14v11l7 5"/></svg>',
+  ticket:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14h36v7a4 4 0 0 0 0 8v7H6v-7a4 4 0 0 0 0-8z"/><path d="M30 14v22" stroke-dasharray="3 3"/></svg>',
+  folder:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14l4 5h20v22H5z"/><path d="M17 29l5 5 9-10"/></svg>'
+};
+const NEEDS = [['wheel',I.wheel,"Fauteuil roulant"],['stairs',IC.stairs,"Pas de marches"],['deaf',I.ear,"Sourd ou malentendant"],['blind',I.eye,"Malvoyant"],['escort',I.people,"Besoin d'un accompagnant"]];
+const OFF = {
+  go:{name:"ULPS Gabès Ouest", ar:"الوحدة المحلية للنهوض الاجتماعي بقابس الغربية", floor:"Rez-de-chaussée", entry:"Rampe d'accès côté rue de la Liberté", ramp:true, lift:null, wc:true, park:true, steps:0, days:[2,4],
+      route:{acc:1.4, short:1.1, shortSteps:12, via:"par l'avenue Farhat Hached et la rampe latérale", shortVia:"par le passage souterrain (12 marches)"}},
+  gm:{name:"ULPS Gabès Médina", ar:"الوحدة المحلية للنهوض الاجتماعي بقابس المدينة", floor:"1er étage, sans ascenseur", entry:"14 marches à l'entrée", ramp:false, lift:false, wc:false, park:false, steps:14, days:[1,3],
+      route:{acc:1.1, short:0.8, shortSteps:20, via:"par la rue de Rome, trottoirs abaissés", shortVia:"par les escaliers du marché (20 marches)"}}
+};
+const RV = { residence:'go', prio:{card:false, age:false, chronic:false}, urgent:false, needs:{wheel:false, stairs:false, deaf:false, blind:false, escort:false}, slot:null, booking:null, fromCard:false };
+
+function markReady(){
+  if (!S.proc) return;
+  const L = requiredDocs();
+  S.ready = { proc:S.proc, applicant:S.applicant || (K.scan && K.scan.ok ? K.scan.data.nf : "فاطمة الحامدي · Fatma Hamdi"), at:new Date(),
+    docs:L.filter(r => !r.auto).map(r => ({id:r.id, qty:r.qty, st:S.docs[r.id] || null})) };
+  if (S.proc === 'dis2') RV.prio.card = true;
+  if (S.proc === 'amen' && S.amen.sits.chronic) RV.prio.chronic = true;
+  if (S.proc === 'dis2' && S.dis.type === 'auditive') RV.needs.deaf = true;
+  if (S.proc === 'dis2' && S.dis.type === 'motrice') RV.needs.wheel = true;
+  RV.slot = null; RV.booking = null;
+}
+function demoReady(){
+  // a fictional file already checked at home: renewal of a disability card for a deaf person
+  resetSituation(); S.proc = 'dis2'; S.dis = {minor:false, type:'auditive', lost:false}; S.applicant = "علي الحامدي · Ali Hamdi";
+  S.docs = {}; requiredDocs().forEach(r => { if (!r.auto) S.docs[r.id] = r.id === 'photo' ? {status:'ok', notes:["Photo reçue."]} : {status:'ok', notes:["Vérifié à la maison (spécimen fictif)."], text:specLines(r.id, true).join('\n'), good:'1'}; });
+  markReady();
+}
+function ageFrom(b){ const m = String(b||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (!m) return null; let a = TODAY.getFullYear() - +m[3]; if (TODAY.getMonth()+1 < +m[2] || (TODAY.getMonth()+1 === +m[2] && TODAY.getDate() < +m[1])) a--; return a; }
+function prioReasons(){
+  const r = [];
+  if (RV.prio.card) r.push({t:"Carte d'handicap en cours de validité", b:"Priorité d'accueil prévue par la loi d'orientation n° 2005-83 (articles 10 et 11)", legal:true});
+  if (RV.prio.age) r.push({t:"65 ans et plus", b:"Règle proposée pour le pilote, à valider par le ministère"});
+  if (RV.prio.chronic) r.push({t:"Maladie chronique prise en charge à 100 % par la CNAM", b:"Règle proposée pour le pilote, justifiée par l'attestation de prise en charge"});
+  return r;
+}
+function slotDays(){
+  const o = OFF[RV.residence], out = []; const d = new Date(TODAY);
+  const rnd = rng(7 + (RV.residence === 'go' ? 1 : 2));
+  while (out.length < 3){ d.setDate(d.getDate() + 1); if (o.days.includes(d.getDay())){
+    const times = []; for (let m = 8*60+30; m < 12*60; m += 15) times.push(`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`);
+    out.push({date:new Date(d), slots:times.map((t,i) => ({t, prio:i < 4, taken:['10:30','11:15'].includes(t) || rnd() < (i < 4 ? .35 : .55)}))}); } }
+  return out;
+}
+const dayFr = d => d.toLocaleDateString('fr-FR',{weekday:'long', day:'numeric', month:'long'});
+function routeSvg(o, accessible){
+  const ok = 'var(--ok)', bad = 'var(--bad)', ink = 'var(--ink)', mut = 'var(--muted)';
+  const S_ = (k, c) => `style="${k}:${c}"`;
+  return `<svg class="route" viewBox="0 0 520 190" role="img" aria-label="Schéma de l'itinéraire">
+    <rect x="0" y="0" width="520" height="190" style="fill:var(--bg)"/>
+    <path d="M40 150 C 120 150, 150 60, 250 60 S 400 60, 470 60" fill="none" ${S_('stroke',bad)} stroke-width="4" stroke-dasharray="7 6" opacity="${accessible ? .45 : 1}"/>
+    <path d="M40 150 L 200 150 C 300 150, 330 150, 380 120 L 470 70" fill="none" ${S_('stroke',ok)} stroke-width="5" opacity="${accessible ? 1 : .5}"/>
+    <g transform="translate(232,46)"><rect x="-4" y="-4" width="44" height="30" rx="6" style="fill:var(--bad-soft)"/><path d="M2 22h8v-6h8v-6h8v-6h8" fill="none" ${S_('stroke',bad)} stroke-width="2.4"/></g>
+    <circle cx="40" cy="150" r="9" ${S_('fill',ink)}/><text x="40" y="178" text-anchor="middle" font-size="12" ${S_('fill',mut)}>Domicile</text>
+    <rect x="456" y="44" width="30" height="30" rx="6" style="fill:var(--accent)"/><text x="471" y="64" text-anchor="middle" font-size="13" style="fill:var(--on-accent)" font-weight="700">U</text>
+    <text x="470" y="96" text-anchor="middle" font-size="12" ${S_('fill',mut)}>ULPS</text>
+    <text x="300" y="172" text-anchor="middle" font-size="12" ${S_('fill',ok)} font-weight="600">Sans marches · ${o.route.acc.toString().replace('.',',')} km</text>
+    <text x="150" y="40" text-anchor="middle" font-size="12" ${S_('fill',bad)} font-weight="600">Plus court · ${o.route.shortSteps} marches</text>
+  </svg>`;
+}
+function renderRdv(){
+  const v = $('viewRdv');
+  if (K.scan && K.scan.ok && !RV.fromCard){ RV.fromCard = true; if (K.scan.data.p) RV.prio.card = true; const a = ageFrom(K.scan.data.b); if (a !== null && a >= 65) RV.prio.age = true; }
+  const R = S.ready, o = OFF[RV.residence], pr = prioReasons(), isPrio = pr.length > 0, mob = RV.needs.wheel || RV.needs.stairs;
+  const days = slotDays();
+  v.innerHTML = `<div class="k-intro"><div><h2>Rendez-vous prioritaire au guichet Dossier prêt</h2>
+      <p class="muted">Un créneau à heure fixe, sans file d'attente, au guichet dédié de l'ULPS compétente, installé au rez-de-chaussée. La priorité d'accueil des titulaires de la carte d'handicap, prévue par la loi, est appliquée automatiquement ; l'itinéraire évite les marches si besoin.</p></div></div>
+  <div class="two">
+    <div style="display:grid;gap:16px">
+      <div class="panel card"><h3>Le dossier</h3>
+        ${R ? `<div class="ready">${IC.folder}<div><b>${esc(PROCS[R.proc].t)}</b> · <span dir="auto">${esc(R.applicant)}</span><div class="muted" style="font-size:13px">${R.docs.length} pièce(s) vérifiée(s) à la maison, prêtes à être déposées</div></div></div>`
+             : `<div class="verdict-box warn"><b>Aucun dossier prêt pour l'instant</b>Préparez-le à l'étape 1–2 (liste des pièces et contrôle par photo), ou chargez un dossier de démonstration.</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="rvGoPrep" type="button">Préparer un dossier</button><button class="btn primary" id="rvDemo" type="button">Charger un dossier de démonstration</button></div>`}
+      </div>
+      <div class="panel card"><h3>Priorité d'accueil</h3>
+        ${K.scan && K.scan.ok ? `<p class="muted" style="margin:0;font-size:13px">Pré-rempli depuis le profil social QR de <b dir="auto">${esc(K.scan.data.nf)}</b> (vérifié hors ligne).</p>` : `<p class="muted" style="margin:0;font-size:13px">Scannez le profil social QR (étape 3) pour pré-remplir, ou cochez avec la personne.</p>`}
+        <div class="checks">
+          <label><input type="checkbox" data-prio="card" ${RV.prio.card?'checked':''}><span>Carte d'handicap en cours de validité<small>Loi d'orientation n° 2005-83, articles 10 et 11 : priorité d'accueil dans les administrations</small></span></label>
+          <label><input type="checkbox" data-prio="age" ${RV.prio.age?'checked':''}><span>65 ans et plus<small>Règle proposée pour le pilote</small></span></label>
+          <label><input type="checkbox" data-prio="chronic" ${RV.prio.chronic?'checked':''}><span>Maladie chronique prise en charge à 100 % par la CNAM<small>Règle proposée pour le pilote</small></span></label>
+          <label><input type="checkbox" id="rvUrgent" ${RV.urgent?'checked':''}><span>Situation urgente : expulsion, décès du soutien de famille, sortie d'hôpital<small>Demande de traitement en 7 jours au lieu de 45 (décret 2020-317, article 23)</small></span></label>
+        </div>
+        <div class="verdict-box ${isPrio?'ok':'warn'}"><b>${isPrio ? 'Accueil prioritaire' : 'Accueil standard à heure fixe'}</b>${isPrio ? pr.map(x => esc(x.b)).join(' · ') : "Le créneau évite déjà la file d'attente ; les créneaux de 8 h 30 à 9 h 15 restent réservés aux personnes prioritaires."}${RV.urgent ? '<br>Traitement en 7 jours demandé : un travailleur social confirme l\'urgence.' : ''}</div>
+      </div>
+      <div class="panel card"><h3>Besoins pour venir</h3>
+        <div class="needs">${NEEDS.map(([k,ic,l]) => `<button type="button" data-need="${k}" aria-pressed="${RV.needs[k]}">${ic}${l}</button>`).join('')}</div>
+        ${RV.needs.deaf ? '<p style="margin:0;font-size:13.5px">L\'agent du guichet est prévenu : le <b>mode sourd</b> s\'ouvre à l\'arrivée de la personne.</p>' : ''}
+        ${RV.needs.escort ? '<div class="verdict-box warn"><b>Accompagnement (phase 2)</b>La demande part vers un réseau de bénévoles vérifiés par des associations partenaires, par exemple un parent d\'une autre famille concernée par le handicap ou une personne qui signe. Leur engagement est reconnu par des badges.</div>' : ''}
+        <p class="muted" style="margin:0;font-size:12.5px">Sans smartphone, un proche, une association ou l'agent réserve pour la personne (mode relais). Dans le pilote : un appel en absence au numéro de l'ULPS, et l'ULPS rappelle.</p>
+      </div>
+    </div>
+    <div style="display:grid;gap:16px">
+      <div class="panel card"><h3>Le bureau compétent et le chemin</h3>
+        <div class="seg">${Object.entries(OFF).map(([k,x]) => `<button type="button" data-res="${k}" aria-pressed="${RV.residence===k}">Résidence : ${x.name.replace('ULPS ','')}</button>`).join('')}</div>
+        <div class="office"><div><b>${esc(o.name)}</b> <span class="ar muted" style="font-size:13px">${o.ar}</span></div>
+          <div class="attrs"><span class="${o.steps?'bad':'ok'}">${esc(o.floor)}</span><span class="${o.ramp?'ok':'bad'}">${esc(o.entry)}</span><span class="${o.wc?'ok':'bad'}">${o.wc?'Toilettes accessibles':'Pas de toilettes accessibles'}</span><span class="${o.park?'ok':'bad'}">${o.park?'Stationnement réservé':'Pas de stationnement réservé'}</span></div>
+          ${o.steps ? `<p style="margin:0;font-size:13.5px"><b>Le guichet Dossier prêt est au rez-de-chaussée :</b> l'agent descend recevoir la personne à l'accueil, elle ne monte pas les ${o.steps} marches.</p>` : `<p style="margin:0;font-size:13.5px">Le guichet Dossier prêt est au rez-de-chaussée, accessible de plain-pied.</p>`}</div>
+        ${routeSvg(o, mob)}
+        <p style="margin:0;font-size:13.5px">${mob ? `<b>Itinéraire proposé, sans marches :</b> ${o.route.acc.toString().replace('.',',')} km ${esc(o.route.via)}, environ ${Math.round(o.route.acc/4*60)} min en fauteuil. Le chemin le plus court (${o.route.short.toString().replace('.',',')} km) passe ${esc(o.route.shortVia)} : il est écarté.` : `Chemin le plus court : ${o.route.short.toString().replace('.',',')} km ${esc(o.route.shortVia)}. Cochez « Fauteuil roulant » ou « Pas de marches » pour un itinéraire sans marches.`}</p>
+        <p class="muted" style="margin:0;font-size:12.5px">Démonstration avec des données fictives. Dans le pilote : le réseau piéton OpenStreetMap, enrichi par les signalements des usagers (une rampe cassée, un ascenseur en panne), sur le modèle de l'application indienne Sugamya Bharat.</p>
+      </div>
+      <div class="panel card"><h3>Choisir un créneau</h3>
+        ${R ? `<div class="slots">${days.map((d,di) => `<div class="day"><span class="lbl">${dayFr(d.date)}</span><div class="row">${d.slots.map((s,si) => { const dis = s.taken || (s.prio && !isPrio); const on = RV.slot && RV.slot.di === di && RV.slot.si === si;
+            return `<button type="button" class="slot ${s.prio?'prio':''}" data-slot="${di}-${si}" ${dis?'disabled':''} aria-pressed="${!!on}" title="${s.prio?'Créneau réservé aux personnes prioritaires':'Créneau ordinaire'}${s.taken?' (pris)':''}">${s.t}</button>`; }).join('')}</div></div>`).join('')}</div>
+            <p class="muted" style="margin:0;font-size:12.5px">Bordure verte : créneaux réservés aux personnes prioritaires (8 h 30 – 9 h 15).</p>
+            <div><button class="btn primary" id="rvBook" type="button" ${RV.slot?'':'disabled'}>Confirmer le rendez-vous</button></div>`
+          : `<p class="muted" style="margin:0">Les créneaux s'affichent dès que le dossier est prêt.</p>`}
+      </div>
+      ${RV.booking ? ticketHtml() : ''}
+    </div>
+  </div>`;
+  v.querySelectorAll('[data-prio]').forEach(c => c.onchange = () => { RV.prio[c.dataset.prio] = c.checked; RV.slot = null; RV.booking = null; renderRdv(); });
+  const u = $('rvUrgent'); if (u) u.onchange = () => { RV.urgent = u.checked; RV.booking = null; renderRdv(); };
+  v.querySelectorAll('[data-need]').forEach(b => b.onclick = () => { RV.needs[b.dataset.need] = !RV.needs[b.dataset.need]; renderRdv(); });
+  v.querySelectorAll('[data-res]').forEach(b => b.onclick = () => { RV.residence = b.dataset.res; RV.slot = null; RV.booking = null; renderRdv(); });
+  v.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => { const [di,si] = b.dataset.slot.split('-').map(Number); RV.slot = {di, si}; renderRdv(); });
+  const bk = $('rvBook'); if (bk) bk.onclick = () => { const d = slotDays()[RV.slot.di], s = d.slots[RV.slot.si];
+    RV.booking = {code:(isPrio ? 'P-' : 'H-') + String(12 + RV.slot.si).padStart(3,'0'), date:d.date, time:s.t, office:o, prio:pr, urgent:RV.urgent, needs:Object.keys(RV.needs).filter(k => RV.needs[k])};
+    G.sel = 'me'; G.scans = {}; renderRdv(); };
+  const gp = $('rvGoPrep'); if (gp) gp.onclick = () => setTab('Counter');
+  const dm = $('rvDemo'); if (dm) dm.onclick = () => { demoReady(); renderRdv(); };
+  const sp = $('rvSpeak'); if (sp) sp.onclick = () => speakText(rdvMsgAr(), rdvMsgFr(), $('rvSpeakMsg'));
+  const tg = $('rvToGuichet'); if (tg) tg.onclick = () => { G.sel = 'me'; setTab('Guichet'); window.scrollTo({top:0}); };
+}
+const arDate = d => d.toLocaleDateString('ar-TN',{weekday:'long', day:'numeric', month:'long'});
+function rdvMsgAr(){ const b = RV.booking, n = S.ready ? S.ready.applicant.split('·')[0].trim() : '';
+  return `عسلامة ${n}. موعدك في شبّاك الدوسي الحاضر، ${b.office.ar}، نهار ${arDate(b.date)} على ${b.time}. جيب معاك الوثائق الأصلية اللي صوّرتهم في الدار.${b.prio.length ? ' عندك أولوية في الاستقبال.' : ''}${b.needs.includes('deaf') ? ' العون باش يحضّر لغة الإشارة.' : ''}`; }
+function rdvMsgFr(){ const b = RV.booking; return `Rendez-vous au guichet Dossier prêt, ${b.office.name}, ${dayFr(b.date)} à ${b.time}. Apportez les originaux des pièces photographiées à la maison.${b.prio.length ? ' Accueil prioritaire.' : ''}`; }
+function ticketHtml(){
+  const b = RV.booking;
+  return `<div class="ticket" aria-live="polite"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+      <div><div class="eyebrow">Ticket ${b.prio.length ? 'prioritaire' : 'à heure fixe'}</div><div class="code mono">${b.code}</div></div>
+      <div style="text-align:end"><b>${dayFr(b.date)}</b><div class="mono" style="font-size:18px">${b.time}</div></div></div>
+    <div style="font-size:14px">Guichet Dossier prêt · ${esc(b.office.name)} · rez-de-chaussée<br>${S.ready ? `${esc(PROCS[S.ready.proc].t)} · ${S.ready.docs.length} pièces à présenter en original` : ''}${b.urgent ? '<br><b>Traitement en 7 jours demandé</b> (décret 2020-317, art. 23)' : ''}</div>
+    <div class="ar" style="font-size:15px;background:var(--bg);border-radius:8px;padding:10px 12px;line-height:1.8">${esc(rdvMsgAr())}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" id="rvSpeak" type="button">${I.speak} Écouter le message</button><button class="btn primary" id="rvToGuichet" type="button">Voir l'arrivée au guichet</button><span class="muted" id="rvSpeakMsg" style="font-size:12.5px">Envoyé aussi par SMS. Rappel vocal la veille.</span></div></div>`;
+}
+function speakText(ar, fr, msgEl){
+  if (!('speechSynthesis' in window)){ if (msgEl) msgEl.textContent = "Synthèse vocale indisponible ici."; return; }
+  const vs = speechSynthesis.getVoices(), va = vs.find(x => /^ar/i.test(x.lang)), vf = vs.find(x => /^fr/i.test(x.lang));
+  const u = new SpeechSynthesisUtterance(va ? ar : fr); const vv = va || vf; if (vv){ u.voice = vv; u.lang = vv.lang; }
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+  if (msgEl) msgEl.textContent = va ? "Lecture en arabe (voix du navigateur). Dans le pilote : voix enregistrée en darija." : "Pas de voix arabe sur cet appareil : lecture en français.";
+}
+
+/* ---------- 5 · the « Dossier prêt » window: physical–digital reconciliation ---------- */
+const G = {sel:null, scans:{}, deaf:null, screen:0, said:[], busy:null};
+const DEMO_Q = [
+  {id:'d2', time:'10:30', name:"مبروكة الجلاصي · Mabrouka Jlassi", proc:'amen', prio:["65 ans et plus"], needs:['wheel'], ids:['birth','cin','bill','lease']},
+  {id:'d3', time:'11:15', name:"صالح العياري · Salah Ayari", proc:'amen', prio:[], needs:[], ids:['birth','cin','bill','presence']}
+];
+function queue(){
+  const q = DEMO_Q.map(x => ({...x, docs:x.ids.map(id => ({id, text:specLines(id, true).join('\n')}))}));
+  if (S.ready && RV.booking) q.push({id:'me', time:RV.booking.time, name:S.ready.applicant, proc:S.ready.proc, prio:RV.booking.prio.map(p => p.t), needs:RV.booking.needs, urgent:RV.booking.urgent,
+    docs:S.ready.docs.map(d => ({id:d.id, text:d.st && d.st.text ? d.st.text : '', manual:!d.st || !d.st.text}))});
+  return q.sort((a,b) => a.time.localeCompare(b.time));
+}
+function facts(text){
+  let t = (text||'').replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+  const dates = new Set(parseDates(t).map(d => fmt(d)));
+  t = t.replace(/\d{1,2}\s*[\/\-.]\s*\d{1,2}\s*[\/\-.]\s*\d{4}/g, ' ').replace(/20\d\d\s*[-\/]\s*20\d\d/g, m => ' Y' + (m.match(/20\d\d/g) || []).sort().join('') + ' ');
+  const nums = new Set((t.match(/Y?\d{3,}/g) || []));
+  const toks = new Set(norm(t).split(/[^a-zء-ي0-9]+/).filter(w => w.length >= 3));
+  return {dates, nums, toks};
+}
+function lev(a, b){ const m = a.length, n = b.length, d = Array.from({length:m+1}, (_, i) => [i]); for (let j = 1; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1)); return d[m][n]; }
+/* OCR can glue a stray character to a number ("220 د" read as "53220"): a number counts as found if it is contained in, or one edit away from, a number on the other side */
+const numIn = (n, set) => set.has(n) || [...set].some(m => (!n.startsWith('Y') && !m.startsWith('Y')) && (m.includes(n) || n.includes(m) || (n.length >= 4 && lev(n, m) <= 1)));
+function reconcile(homeText, winText){
+  const A = facts(homeText), B = facts(winText);
+  const diffs = [];
+  A.dates.forEach(d => { if (!B.dates.has(d)) diffs.push(`date ${d} absente de l'original`); });
+  B.dates.forEach(d => { if (!A.dates.has(d)) diffs.push(`date ${d} sur l'original, absente de la version vérifiée`); });
+  A.nums.forEach(n => { if (!numIn(n, B.nums)) diffs.push(`${n.startsWith('Y') ? 'année ' + n.slice(1,5) + '-' + n.slice(5) : 'nombre ' + n} absent de l'original`); });
+  B.nums.forEach(n => { if (!numIn(n, A.nums)) diffs.push(`${n.startsWith('Y') ? 'année ' + n.slice(1,5) + '-' + n.slice(5) : 'nombre ' + n} sur l'original, absent de la version vérifiée`); });
+  let inter = 0; A.toks.forEach(w => { if (B.toks.has(w)) inter++; });
+  const jac = inter / (A.toks.size + B.toks.size - inter || 1);
+  const keyTotal = A.dates.size + A.nums.size, keyOk = [...A.dates].filter(d => B.dates.has(d)).length + [...A.nums].filter(n => numIn(n, B.nums)).length;
+  const score = Math.round(100 * (keyTotal ? .65 * keyOk / keyTotal + .35 * Math.min(1, jac / .6) : Math.min(1, jac / .6)));
+  const ok = diffs.length === 0 && jac >= .3;
+  if (!ok && !diffs.length) diffs.push("texte trop différent de la version vérifiée");
+  return {ok, score, diffs};
+}
+async function scanOriginal(item, d, alt, file){
+  const key = item.id + ':' + d.id;
+  G.scans[key] = {busy:true}; renderGuichet();
+  try{
+    const w = await getWorker();
+    const src = file ? await toCanvas(file) : specimen(d.id, true, alt);
+    const {data} = await w.recognize(src);
+    const r = d.text ? reconcile(d.text, data.text) : {ok:true, score:null, diffs:[], noref:true};
+    G.scans[key] = {...r, at:new Date()};
+  }catch(e){ G.scans[key] = {ok:false, error:true, diffs:["Lecture automatique indisponible ici : contrôle visuel par l'agent."]}; }
+  renderGuichet();
+}
+const PHR = [
+  ["عسلامة، دوسيك حاضر.","Bonjour, votre dossier est prêt."],
+  ["عطيني بطاقة التعريف متاعك.","Donnez-moi votre carte d'identité."],
+  ["توا نثبت في الوثائق الأصلية.","Je vérifie maintenant les originaux."],
+  ["الوثائق الكل صحيحة، الدوسي تقبل.","Tout est conforme, le dossier est reçu."],
+  ["فما وثيقة مختلفة، نعاودوها مع بعضنا.","Une pièce est différente, nous la reprenons ensemble."],
+  ["امضي هوني، ولا حط صبعك.","Signez ici, ou mettez votre empreinte."],
+  ["الجواب يجيك في إرسالية.","La réponse arrive par SMS."],
+  ["تحب مترجم بلغة الإشارة؟","Voulez-vous un interprète en langue des signes ?"]
+];
+const RESP = [["إيه","Oui"],["لا","Non"],["ما فهمتش","Je ne comprends pas"],["عاود من فضلك","Répétez, s'il vous plaît"],["عندي سؤال","J'ai une question"],["يعيشك","Merci"]];
+const AVATAR = `<svg class="avatar" viewBox="0 0 150 130" aria-hidden="true"><circle cx="75" cy="30" r="17" fill="currentColor" opacity=".9"/><path d="M45 128 C45 80, 105 80, 105 128 Z" fill="currentColor" opacity=".55"/>
+  <g class="hl"><path d="M62 74 L36 58" stroke="currentColor" stroke-width="9" stroke-linecap="round"/><circle cx="33" cy="56" r="8" fill="currentColor"/></g>
+  <g class="hr"><path d="M88 74 L114 58" stroke="currentColor" stroke-width="9" stroke-linecap="round"/><circle cx="117" cy="56" r="8" fill="currentColor"/></g></svg>`;
+function renderGuichet(){
+  const v = $('viewGuichet'), q = queue();
+  if (!G.sel || !q.find(x => x.id === G.sel)) G.sel = (q.find(x => x.id === 'me') || q[0]).id;
+  const it = q.find(x => x.id === G.sel);
+  const deafOn = G.deaf === null ? it.needs.includes('deaf') : G.deaf;
+  const res = it.docs.map(d => ({d, r:G.scans[it.id + ':' + d.id]}));
+  const done = res.filter(x => x.r && !x.r.busy), diffs = done.filter(x => !x.r.ok && !x.r.agent), allDone = done.length === res.length;
+  const stats = {n:q.length, p:q.filter(x => x.prio.length).length};
+  const delay = it.urgent ? "7 jours (cas urgent, décret 2020-317, art. 23)" : it.proc === 'amen' ? "45 jours au plus (décret 2020-317, art. 23)" : "45 jours (décret 3086/2005)";
+  v.innerHTML = `<div class="k-intro"><div><h2>Le guichet Dossier prêt</h2>
+      <p class="muted">Un guichet dédié, au rez-de-chaussée, pour les dossiers déjà vérifiés à la maison. L'agent scanne les originaux ; l'IA les rapproche de la version vérifiée. Tout concorde : le dossier est reçu en un passage. Un écart : la pièce est reprise avec la personne, ou le dossier repasse par l'accueil ordinaire.</p></div>
+      <div class="seg"><span class="chip">${stats.n} rendez-vous ce matin</span><span class="chip on">${stats.p} prioritaire(s)</span></div></div>
+  <div class="two">
+    <div style="display:grid;gap:16px;align-content:start">
+      <div class="panel card"><h3>Rendez-vous du jour</h3><div class="queue">${q.map(x => `<button type="button" class="qitem" data-q="${x.id}" aria-pressed="${x.id===G.sel}">
+          <span class="t">${x.time}</span><span style="min-width:0"><span dir="auto" style="font-weight:600">${esc(x.name)}</span><span class="muted" style="display:block;font-size:12.5px">${esc(PROCS[x.proc].t)}${x.id==='me'?' · votre rendez-vous':''}</span></span>
+          <span style="display:grid;gap:4px;justify-items:end">${x.prio.length ? '<span class="pill ok">Prioritaire</span>' : '<span class="pill wait">À heure fixe</span>'}<span class="ic">${x.needs.map(n => (NEEDS.find(z => z[0]===n)||[])[1] || '').join('')}</span></span></button>`).join('')}</div>
+        ${!q.find(x => x.id==='me') ? '<p class="muted" style="margin:0;font-size:12.5px">Réservez un créneau à l\'étape 4 pour voir votre propre dossier arriver ici.</p>' : ''}
+      </div>
+      <div class="deaf panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 12px 0;flex-wrap:wrap"><h3 style="font-size:16px;font-weight:600">Mode sourd</h3>
+          <button type="button" class="btn sm ${deafOn?'primary':''}" id="gDeaf">${deafOn ? 'Activé' : 'Activer'}</button></div>
+        ${deafOn ? `<div class="deaf-screen" style="margin-top:12px"><div style="color:var(--bg)">${AVATAR}<div class="cap">Avatar de démonstration</div></div>
+            <div><div class="big ar">${PHR[G.screen][0]}</div><div class="fr">${esc(PHR[G.screen][1])}</div>
+            <div class="fr" style="margin-top:8px">Écran tourné vers la personne. Pilote : chaque phrase est un clip en langue des signes tunisienne, signé par une personne sourde (avec l'Association Voix du Sourd de Tunisie).</div></div></div>
+          <div class="muted" style="padding:10px 12px 0;font-size:12.5px">L'agent choisit la phrase :</div>
+          <div class="phr">${PHR.map((p,i) => `<button type="button" data-phr="${i}" ${i===G.screen?'aria-pressed="true" style="border-color:var(--accent)"':''}><span class="ar">${p[0]}</span><span class="muted">${esc(p[1])}</span></button>`).join('')}</div>
+          <div class="muted" style="padding:0 12px 6px;font-size:12.5px">La personne répond en touchant l'écran (pilote : signes du guichet reconnus par la caméra) :</div>
+          <div class="resp">${RESP.map((r,i) => `<button type="button" data-resp="${i}"><span class="ar">${r[0]}</span> · ${esc(r[1])}</button>`).join('')}</div>
+          ${G.said.length ? `<div style="padding:0 12px 12px;font-size:13.5px">L'agent entend : <b>${esc(G.said[G.said.length-1])}</b> <span class="muted" id="gSayMsg" style="font-size:12px"></span></div>` : ''}
+          <div style="padding:0 12px 12px"><button class="btn sm" type="button" id="gInterp">Appeler un interprète en visio</button> <span class="muted" id="gInterpMsg" style="font-size:12.5px"></span></div>`
+        : `<p class="muted" style="margin:8px 12px 12px;font-size:13.5px">S'active seul quand la personne a signalé une surdité au rendez-vous.</p>`}
+      </div>
+    </div>
+    <div class="panel card">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline"><h3><span dir="auto">${esc(it.name)}</span></h3><span class="mono muted">${it.time} · ${esc(PROCS[it.proc].t)}</span></div>
+      ${it.prio.length ? `<div class="verdict-box ok" style="padding:8px 12px"><b style="font-size:14px">Accueil prioritaire</b>${esc(it.prio.join(' · '))}</div>` : ''}
+      <p class="muted" style="margin:0;font-size:13.5px">Pour chaque pièce : scanner l'original apporté par la personne. Pour la démonstration, l'original peut être identique ou modifié.</p>
+      <div style="display:grid;gap:8px">${res.map(({d,r}) => { const D = DT[d.id];
+        return `<div class="rec"><div class="ico">${I[D.ico]}</div><div style="min-width:0"><b style="font-size:14px">${esc(D.fr)}</b><span class="ar muted" style="display:block;font-size:13px">${esc(D.ar)}</span>
+          <span class="muted" style="font-size:12px">${d.manual ? 'Pièce contrôlée par l\'agent (pas de texte numérisé)' : 'Version vérifiée à la maison ✓'}</span></div>
+          <div class="acts">${!r ? (d.manual || d.id === 'photo' ? `<button class="btn sm" type="button" data-man="${d.id}">Conforme (contrôle visuel)</button>`
+              : `<button class="btn sm primary" type="button" data-scan="${d.id}">Scanner l'original</button><button class="btn sm ghost" type="button" data-alt="${d.id}" title="Simule un original différent de la version vérifiée">Original modifié</button><label class="btn sm ghost">${I.cam}<input type="file" accept="image/*" data-up="${d.id}" hidden></label>`)
+            : r.busy ? '<span class="pill wait">Lecture…</span>'
+            : r.ok || r.agent ? `<span class="pill ok">Concorde${r.score!=null && !r.agent ? ' · ' + r.score + ' %' : ''}</span>` : `<span class="pill bad">Écart</span>`}</div>
+          ${r && !r.busy && (r.diffs && r.diffs.length) ? `<div class="res">${r.diffs.slice(0,3).map(x => `<span>⚠ ${esc(x)}</span>`).join('')}${!r.agent && !r.error ? `<span><button class="btn sm ghost" type="button" data-agentok="${d.id}">L'agent a vérifié : accepter la pièce</button></span>` : ''}</div>` : ''}
+        </div>`; }).join('')}</div>
+      ${allDone ? (diffs.length ? `<div class="verdict-box bad"><b>Écart détecté sur ${diffs.length} pièce(s)</b>L'IA signale, l'agent décide : la pièce est reprise avec la personne, ou le dossier repasse par l'accueil ordinaire. L'IA ne refuse jamais un dossier.</div>`
+          : `<div class="ticket"><div class="eyebrow">Récépissé de dépôt</div><div class="code mono">DP-2026-${String(4200 + q.indexOf(it)).padStart(6,'0')}</div>
+             <div style="font-size:14px">${esc(PROCS[it.proc].t)} · reçu le ${fmt(TODAY)} à ${it.time}, en un seul passage.<br>Délai de décision : ${delay}. Suivi par SMS.</div>
+             <div class="verdict-box ok" style="padding:8px 12px"><b style="font-size:14px">Dossier reçu en un passage</b>Toutes les pièces concordent avec la version vérifiée à la maison.</div></div>`)
+        : `<p class="muted" style="margin:0;font-size:13px">${done.length}/${res.length} pièce(s) rapprochée(s).</p>`}
+    </div>
+  </div>`;
+  v.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { G.sel = b.dataset.q; G.deaf = null; G.said = []; renderGuichet(); });
+  v.querySelectorAll('[data-scan]').forEach(b => b.onclick = () => scanOriginal(it, it.docs.find(x => x.id === b.dataset.scan), false));
+  v.querySelectorAll('[data-alt]').forEach(b => b.onclick = () => scanOriginal(it, it.docs.find(x => x.id === b.dataset.alt), true));
+  v.querySelectorAll('[data-up]').forEach(inp => inp.onchange = () => { const f = inp.files && inp.files[0]; if (f) scanOriginal(it, it.docs.find(x => x.id === inp.dataset.up), false, f); });
+  v.querySelectorAll('[data-man]').forEach(b => b.onclick = () => { G.scans[it.id + ':' + b.dataset.man] = {ok:true, agent:true, diffs:[]}; renderGuichet(); });
+  v.querySelectorAll('[data-agentok]').forEach(b => b.onclick = () => { const k = it.id + ':' + b.dataset.agentok; G.scans[k] = {...G.scans[k], agent:true, diffs:["Pièce acceptée par l'agent après vérification."]}; renderGuichet(); });
+  $('gDeaf').onclick = () => { G.deaf = !deafOn; renderGuichet(); };
+  v.querySelectorAll('[data-phr]').forEach(b => b.onclick = () => { G.screen = +b.dataset.phr; renderGuichet(); });
+  v.querySelectorAll('[data-resp]').forEach(b => b.onclick = () => { const r = RESP[+b.dataset.resp]; G.said.push(r[1]); renderGuichet(); speakText(r[0], r[1], $('gSayMsg')); });
+  const gi = $('gInterp'); if (gi) gi.onclick = () => { $('gInterpMsg').textContent = "Phase 2 : un interprète du pool national rejoint en visio, avec le résumé de l'échange."; };
+}
+const hh = (location.hash || '').slice(1);
+if (hh === 'rdv') setTab('Rdv'); else if (hh === 'guichet') setTab('Guichet');
+</script>
+
+
+</body>
+</html>

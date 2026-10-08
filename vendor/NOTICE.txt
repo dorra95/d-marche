@@ -1,0 +1,5 @@
+worker.min.js : tesseract.js 5.1.1 (Apache License 2.0, https://github.com/naptha/tesseract.js),
+modifié sur une ligne pour que les données de langue embarquées s'initialisent par leur code.
+tessdata/*.traineddata.gz : modèles Tesseract 4.0.0 best_int (Apache License 2.0), paquets @tesseract.js-data/ara et /fra.
+
+Chargées depuis cdn.jsdelivr.net (non incluses) : tesseract.js 5.1.1 et tesseract.js-core 5.1.1 (Apache 2.0), qrcode-generator 1.4.4 (MIT, Kazuhiko Arase), jsQR 1.4.0 (Apache 2.0).
